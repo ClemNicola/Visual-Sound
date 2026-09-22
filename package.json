@@ -12,9 +12,14 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^7.3.3"
+    "astro": "^7.3.3",
+    "p5": "^2.3.3",
+    "p5.sound": "^0.4.1"
   },
   "allowScripts": {
     "esbuild": true
+  },
+  "devDependencies": {
+    "@types/p5": "^1.7.7"
   }
 }

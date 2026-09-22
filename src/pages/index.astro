@@ -9,9 +9,30 @@
 		<link rel="icon" href="/favicon.ico" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
+		<title>Visual Sound</title>
 	</head>
 	<body>
-		<h1>Astro</h1>
+		<div id="sketch"></div>
 	</body>
 </html>
+
+<script>
+	import { sketch } from "../sketches/main";
+	import p5 from "p5";
+	(window as any).p5 = p5;
+	await import("p5.sound");
+	new p5(sketch, document.getElementById("sketch") as HTMLElement);
+</script>
+
+<style is:global>
+	html, body {
+	  margin: 0;
+	  padding: 0;
+	  overflow: hidden;
+	  background: #000;
+	}
+	#sketch,
+	#sketch canvas {
+	  display: block;
+	}
+  </style>
