@@ -60,21 +60,21 @@ function setup(p: p5, state: SketchState) {
 
 function draw(p: p5, state: SketchState) {
   p.background(0);
-
+  p.noStroke();
   state.fft.analyze();
   const volume = state.amplitude.getLevel();
   let frequency = state.fft.getCentroid();
-  frequency *= 0.001;
+  frequency *= 0.01;
 
-  const mapFreq = p.map(frequency, 0, 0.5, 0, 20);
-  const mapVolume = p.map(volume, 0, 0.2, 0, 0.2);
+  const mapFreq = p.map(frequency, 0, 1.0, 0, 0.1);
+  const mapVolume = p.map(volume, 0, 5, 0, 0.5);
 
   state.myShaders.setUniform("uTime", p.frameCount);
 
   state.myShaders.setUniform("uFrequency", mapFreq);
   state.myShaders.setUniform("uAmplitude", mapVolume);
   state.myShaders.setUniform("uTexture", state.image);
-  p.rect(0, 0, p.width, p.height);
+  p.sphere(p.width / 8, 200, 200);
 }
 
 function mousePressed(p: p5, state: SketchState) {
