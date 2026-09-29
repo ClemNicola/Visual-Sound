@@ -7,6 +7,7 @@ const VERTEX_SHADER = "/shaders/vertex.vert";
 const FRAGMENT_SHADER = "/shaders/fragment.frag";
 const IMG_1 = "/images/img_1.webp";
 const IMG_2 = "/images/img_2.webp";
+const DMAP = "/images/displacement.webp";
 
 export type SketchState = {
   song: p5.SoundFile;
@@ -17,6 +18,7 @@ export type SketchState = {
   bgColor: p5.Color;
   myShaders: p5.Shader;
   image: p5.Image;
+  dMap: p5.Image;
 };
 
 export const WebGLSketch = (p: p5) => {
@@ -31,9 +33,10 @@ export const WebGLSketch = (p: p5) => {
 };
 
 function preload(p: p5, state: SketchState) {
-  state.song = p.loadSound(AUDIO_URL_2);
+  state.song = p.loadSound(AUDIO_URL);
   state.myShaders = p.loadShader(VERTEX_SHADER, FRAGMENT_SHADER);
   state.image = p.loadImage(IMG_2);
+  state.dMap = p.loadImage(DMAP);
 }
 
 function setup(p: p5, state: SketchState) {
@@ -46,6 +49,8 @@ function setup(p: p5, state: SketchState) {
   state.fft = new p5.FFT();
   state.peakDetect = new p5.PeakDetect(0, 20000, 0.025);
 
+  state.myShaders.setUniform("uTexture", state.image);
+  state.myShaders.setUniform("uDmap", state.dMap);
   state.myShaders.setUniform("uResolution", [p.width, p.height]);
   state.myShaders.setUniform("uTextureResolution", [
     state.image.width,
@@ -64,17 +69,22 @@ function draw(p: p5, state: SketchState) {
   state.fft.analyze();
   const volume = state.amplitude.getLevel();
   let frequency = state.fft.getCentroid();
-  frequency *= 0.01;
+  frequency *= 0.001;
 
-  const mapFreq = p.map(frequency, 0, 1.0, 0, 0.1);
-  const mapVolume = p.map(volume, 0, 5, 0, 0.5);
+  // const radius = p.width / 8;
+
+  const mapVolume = p.map(volume, 0, 1.0, 0, 1.0);
+  const mapFreq = p.map(frequency, 0, 5.0, 0.0, 0.8);
 
   state.myShaders.setUniform("uTime", p.frameCount);
 
   state.myShaders.setUniform("uFrequency", mapFreq);
   state.myShaders.setUniform("uAmplitude", mapVolume);
   state.myShaders.setUniform("uTexture", state.image);
-  p.sphere(p.width / 8, 200, 200);
+  state.myShaders.setUniform("uDmap", state.dMap);
+  // p.rotateY(p.PI);
+  // p.sphere(radius, 200, 200);
+  p.rect(0, 0, p.width, p.height);
 }
 
 function mousePressed(p: p5, state: SketchState) {
