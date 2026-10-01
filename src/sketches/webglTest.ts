@@ -35,7 +35,7 @@ export const WebGLSketch = (p: p5) => {
 function preload(p: p5, state: SketchState) {
   state.song = p.loadSound(AUDIO_URL);
   state.myShaders = p.loadShader(VERTEX_SHADER, FRAGMENT_SHADER);
-  state.image = p.loadImage(IMG_2);
+  state.image = p.loadImage(IMG_1);
   state.dMap = p.loadImage(DMAP);
 }
 
