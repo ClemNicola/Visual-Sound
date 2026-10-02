@@ -1,13 +1,11 @@
 import p5 from "p5";
 import { createPlayer } from "./player";
 
-const AUDIO_URL = "/music/y2k.mp3";
-const AUDIO_URL_2 = "/music/rock_body.mp3";
+const AUDIO_URL = "/music/siente.mp3";
 const VERTEX_SHADER = "/shaders/vertex.vert";
 const FRAGMENT_SHADER = "/shaders/fragment.frag";
-const IMG_1 = "/images/img_1.webp";
-const IMG_2 = "/images/img_2.webp";
-const DMAP = "/images/displacement.webp";
+const IMG_1 = "/images/bigroom_sensual.webp";
+const DMAP = "/displacement/worely.webp";
 
 export type SketchState = {
   song: p5.SoundFile;
@@ -19,6 +17,7 @@ export type SketchState = {
   myShaders: p5.Shader;
   image: p5.Image;
   dMap: p5.Image;
+  capture: p5.MediaElement;
 };
 
 export const WebGLSketch = (p: p5) => {
@@ -47,9 +46,12 @@ function setup(p: p5, state: SketchState) {
 
   state.amplitude = new p5.Amplitude();
   state.fft = new p5.FFT();
-  state.peakDetect = new p5.PeakDetect(0, 20000, 0.025);
+  state.peakDetect = new p5.PeakDetect(400, 4000, 0.05);
+  //state.capture = p.createCapture(p.VIDEO) as p5.MediaElement;
+  //state.capture.hide();
 
   state.myShaders.setUniform("uTexture", state.image);
+  // state.myShaders.setUniform("uCamera", state.capture);
   state.myShaders.setUniform("uDmap", state.dMap);
   state.myShaders.setUniform("uResolution", [p.width, p.height]);
   state.myShaders.setUniform("uTextureResolution", [
@@ -71,20 +73,21 @@ function draw(p: p5, state: SketchState) {
   let frequency = state.fft.getCentroid();
   frequency *= 0.001;
 
-  // const radius = p.width / 8;
+  const radius = p.width / 8;
 
   const mapVolume = p.map(volume, 0, 1.0, 0, 1.0);
   const mapFreq = p.map(frequency, 0, 5.0, 0.0, 0.8);
 
-  state.myShaders.setUniform("uTime", p.frameCount);
+  state.myShaders.setUniform("uTime", p.frameCount * 0.01);
 
   state.myShaders.setUniform("uFrequency", mapFreq);
   state.myShaders.setUniform("uAmplitude", mapVolume);
   state.myShaders.setUniform("uTexture", state.image);
+  //state.myShaders.setUniform("uCamera", state.capture);
   state.myShaders.setUniform("uDmap", state.dMap);
-  // p.rotateY(p.PI);
-  // p.sphere(radius, 200, 200);
-  p.rect(0, 0, p.width, p.height);
+  p.rotateY(p.PI);
+  p.sphere(radius, 200, 200);
+  //p.rect(0, 0, p.width, p.height);
 }
 
 function mousePressed(p: p5, state: SketchState) {
