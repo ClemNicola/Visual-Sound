@@ -30,6 +30,13 @@ export const WebGLSketch = (p: p5) => {
     let player: { setSong: (song: p5.SoundFile) => void };
     player = createPlayer(state.song);
     const track = DATA_SONGS[index];
+    const title = document.getElementById("song-title");
+    const artist = document.getElementById("song-artist");
+    const album = document.getElementById("song-album");
+    if (title) title.textContent = `title: ${track.title}`;
+    if (artist) artist.textContent = `artist: ${track.artist}`;
+    if (album) album.textContent = `album: ${track.album}`;
+
     const wasPlaying = state.song.isPlaying();
     state.song.stop();
 
