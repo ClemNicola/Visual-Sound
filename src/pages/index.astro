@@ -16,12 +16,19 @@
 	</body>
 </html>
 
+
+
 <script>
-	import { sketch } from "../sketches/main";
+	// import { sketch } from "../sketches/main";
+	import { WebGLSketch } from "../sketches/webglTest";
 	import p5 from "p5";
 	(window as any).p5 = p5;
 	await import("p5/lib/addons/p5.sound");
-	new p5(sketch, document.getElementById("sketch") as HTMLElement);
+	// p5.sound peut lancer setup() avant preload() si la page n'est pas encore chargée
+	if (document.readyState !== "complete") {
+		await new Promise((resolve) => window.addEventListener("load", resolve, { once: true }));
+	}
+	new p5(WebGLSketch, document.getElementById("sketch") as HTMLElement);
 </script>
 
 <style is:global>
