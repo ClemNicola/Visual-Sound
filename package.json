@@ -12,6 +12,7 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@types/three": "^0.186.0",
     "astro": "^7.3.3",
     "p5": "^1.11.13",
     "three": "^0.186.1"

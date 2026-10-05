@@ -1,25 +1,23 @@
 import * as THREE from "three";
 import { DATA_SONGS } from "../constants/song";
 
-export const Carousel3D = () => {
+export const Carousel3D = (selectTrack: (index: number) => void) => {
   const canvas = document.getElementById("carousel3d") as HTMLCanvasElement;
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
   const render = new THREE.WebGLRenderer({
     canvas,
+    alpha: true,
     antialias: true,
     preserveDrawingBuffer: true,
   });
 
-  render.setSize(window.innerWidth, window.innerHeight);
+  render.setSize(width, height);
   render.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xe3e3db);
-  const camera = new THREE.PerspectiveCamera(
-    45,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    100,
-  );
+  scene.background = null;
+  const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
 
   camera.position.z = 5;
 
@@ -35,9 +33,9 @@ export const Carousel3D = () => {
     distortionSmoothing: 0.75,
   };
 
-  const slideWidth = 3.0;
-  const slideHeight = 2.0;
-  const gap = 0.1;
+  const slideWidth = 2.75;
+  const slideHeight = 2.5;
+  const gap = 0.2;
   const slideCount = DATA_SONGS.length;
   const totalWidth = slideCount * (slideWidth + gap);
   const slideUnit = slideWidth + gap;
@@ -65,10 +63,8 @@ export const Carousel3D = () => {
 
   const createSlide = (index: number) => {
     const geometry = new THREE.PlaneGeometry(slideWidth, slideHeight, 32, 16);
-    const colors = ["#FF5733", "#33FF57", "#3357FF", "#FF33A1", "#A133FF"];
 
     const material = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(colors[index % colors.length]),
       side: THREE.DoubleSide,
     });
 
@@ -89,7 +85,9 @@ export const Carousel3D = () => {
         material.color.set(0xffffff);
         material.needsUpdate = true;
 
-        const imgAspect = texture.image.width / texture.image.height;
+        const imgAspect =
+          (texture.image as HTMLImageElement).width /
+          (texture.image as HTMLImageElement).height;
         const slideAspect = slideWidth / slideHeight;
 
         if (imgAspect > slideAspect) {
@@ -99,7 +97,7 @@ export const Carousel3D = () => {
         }
       },
       undefined,
-      (error: Error) => console.warn("Image not found:", error),
+      (error: unknown) => console.warn("Image not found:", error),
     );
 
     scene.add(mesh);
@@ -233,9 +231,9 @@ export const Carousel3D = () => {
   });
 
   window.addEventListener("resize", () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    render.setSize(window.innerWidth, window.innerHeight);
+    render.setSize(width, height);
   });
 
   const animate = (animateTime: number) => {
@@ -257,6 +255,15 @@ export const Carousel3D = () => {
     }
 
     currentPosition += (targetPosition - currentPosition) * settings.smoothing;
+
+    const indexCover =
+      ((Math.round(currentPosition / slideUnit) % slideCount) + slideCount) %
+      slideCount;
+
+    if (indexCover !== previousPosition) {
+      previousPosition = indexCover;
+      selectTrack(indexCover);
+    }
     const currentVelocity = Math.abs(currentPosition - prevPos) / deltaTime;
 
     velocityHistory.push(currentVelocity);
@@ -318,7 +325,7 @@ export const Carousel3D = () => {
 
       const wrapThreshold = totalWidth / 2 + slideWidth;
 
-      if (Math.abs(slide.userData.currentX) > wrapThreshold * 1.5) {
+      if (Math.abs(slide.userData.currentX) < wrapThreshold * 1.5) {
         slide.position.x = slide.userData.currentX;
         updateCurve(slide, slide.position.x, currentDistortionFactor);
       }

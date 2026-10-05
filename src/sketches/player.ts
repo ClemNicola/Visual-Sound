@@ -3,7 +3,16 @@ import type p5 from "p5";
 const formatTime = (s: number) =>
   `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
-export function createPlayer(song: p5.SoundFile) {
+export function createPlayer(initialSong: p5.SoundFile) {
+  let song = initialSong;
+
+  const setSong = (next: p5.SoundFile) => {
+    song = next;
+    pausedAt = null;
+    slider.max = String(next.duration());
+    render();
+  };
+
   const container = document.createElement("div");
   container.style.cssText =
     "position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:8px 14px;background:rgba(0,0,0,.6);color:#fff;font:12px monospace;border-radius:8px;z-index:10;";
@@ -68,5 +77,6 @@ export function createPlayer(song: p5.SoundFile) {
     if (song.isPlaying()) pausedAt = null;
     render(pausedAt ?? song.currentTime());
   }, 250);
-  render();
+
+  return { setSong };
 }
