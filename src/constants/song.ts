@@ -1,5 +1,3 @@
-import p5 from "p5";
-
 const Y2K = "/music/y2k.mp3";
 const ROCK_BODY = "/music/rock_body.mp3";
 const AMORE = "/music/amore.mp3";

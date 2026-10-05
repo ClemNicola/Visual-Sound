@@ -1,13 +1,13 @@
 import p5 from "p5";
 import { createPlayer } from "./player";
+import { DATA_SONGS } from "../constants/song";
+import { PlaneHelper } from "three";
 
-const AUDIO_URL = "/music/amore.mp3";
 const VERTEX_SHADER = "/shaders/vertex.vert";
 const FRAGMENT_SHADER = "/shaders/fragment.frag";
-const IMG_1 = "/images/amore_tossico.webp";
 const DMAP = "/displacement/turbulence.webp";
 // 0..1 : plus bas = amplitude plus douce, plus haut = plus réactive
-const AMP_SMOOTHING = 0.5;
+const AMP_SMOOTHING = 0.09;
 
 export type SketchState = {
   song: p5.SoundFile;
@@ -26,18 +26,47 @@ export type SketchState = {
 export const WebGLSketch = (p: p5) => {
   const state = {} as SketchState;
 
+  const selectTrack = (index: number) => {
+    let player: { setSong: (song: p5.SoundFile) => void };
+    player = createPlayer(state.song);
+    const track = DATA_SONGS[index];
+    const title = document.getElementById("song-title");
+    const artist = document.getElementById("song-artist");
+    const album = document.getElementById("song-album");
+    if (title) title.textContent = `title: ${track.title}`;
+    if (artist) artist.textContent = `artist: ${track.artist}`;
+    if (album) album.textContent = `album: ${track.album}`;
+
+    const wasPlaying = state.song.isPlaying();
+    state.song.stop();
+
+    state.image = p.loadImage(track.cover, (img) => {
+      state.myShaders.setUniform("uTexture", img);
+      state.myShaders.setUniform("uTextureResolution", [img.width, img.height]);
+    });
+
+    state.song = p.loadSound(track.song, (sound) => {
+      state.amplitude.setInput(sound);
+      state.fft.setInput(sound);
+      player.setSong(sound);
+      if (wasPlaying) sound.play();
+    });
+  };
+
   p.preload = () => {
     preload(p, state);
   };
   p.setup = () => setup(p, state);
   p.draw = () => draw(p, state);
-  p.mousePressed = () => mousePressed(p, state);
+  p.keyPressed = () => keyPressed(p, state);
+
+  return selectTrack;
 };
 
 function preload(p: p5, state: SketchState) {
-  state.song = p.loadSound(AUDIO_URL);
+  state.song = p.loadSound(DATA_SONGS[0].song);
   state.myShaders = p.loadShader(VERTEX_SHADER, FRAGMENT_SHADER);
-  state.image = p.loadImage(IMG_1);
+  state.image = p.loadImage(DATA_SONGS[0].cover);
   state.dMap = p.loadImage(DMAP);
 }
 
@@ -66,13 +95,11 @@ function setup(p: p5, state: SketchState) {
   state.fft.setInput(state.song);
 
   state.smoothAmplitude = 0.05;
-
-  createPlayer(state.song);
 }
 
 function draw(p: p5, state: SketchState) {
   // p.background(0);
-  state.bgColor = p.color(40, 40, 40, 175);
+  state.bgColor = p.color(255, 255, 255, 1);
   p.background(state.bgColor);
   p.noStroke();
   state.fft.analyze();
@@ -102,10 +129,12 @@ function draw(p: p5, state: SketchState) {
   //p.rect(0, 0, p.width, p.height);
 }
 
-function mousePressed(p: p5, state: SketchState) {
-  if (state.song.isPlaying()) {
-    state.song.pause();
-  } else {
-    state.song.play();
+function keyPressed(p: p5, state: SketchState) {
+  if (p.key === " ") {
+    if (state.song.isPlaying()) {
+      state.song.pause();
+    } else {
+      state.song.play();
+    }
   }
 }

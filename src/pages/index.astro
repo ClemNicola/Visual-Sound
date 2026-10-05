@@ -1,5 +1,5 @@
 ---
-
+import { DATA_SONGS } from "../constants/song";
 ---
 
 <html lang="en">
@@ -7,12 +7,32 @@
 		<meta charset="utf-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
+		<link rel="preload" href="/fonts/JetBrainsMono-VariableFont_wght.ttf" as="font" type="font/ttf" crossorigin />
+		<link rel="preload" href="/fonts/Unbounded-VariableFont_wght.ttf" as="font" type="font/ttf" crossorigin />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
 		<title>Visual Sound</title>
 	</head>
 	<body>
+		<nav>
+			<p>Visual Sound</p>		
+			<div class="nav-experience">
+				<p>Visual Experience</p>
+				<div id="songs-info">
+					<p id="song-title">title: {DATA_SONGS[0].title}</p>
+					<p id="song-artist">artist: {DATA_SONGS[0].artist}</p>
+					<p id="song-album">album: {DATA_SONGS[0].album}</p>
+				</div>
+			</div>
+			
+		</nav>
 		<div id="sketch"></div>
+		<footer>
+			<p>Modify Effects (coming soon) </p>
+			<p>By Clement Nicolas</p>
+		</footer>
+		<canvas id="carousel3d"></canvas>
+		
 	</body>
 </html>
 
@@ -20,6 +40,7 @@
 
 <script>
 	// import { sketch } from "../sketches/main";
+	import { Carousel3D } from "../sketches/carousel";
 	import { WebGLSketch } from "../sketches/webglTest";
 	import p5 from "p5";
 	(window as any).p5 = p5;
@@ -28,18 +49,94 @@
 	if (document.readyState !== "complete") {
 		await new Promise((resolve) => window.addEventListener("load", resolve, { once: true }));
 	}
-	new p5(WebGLSketch, document.getElementById("sketch") as HTMLElement);
+
+	let selectTrack = (_index: number) => {}
+
+	new p5((p) => selectTrack = WebGLSketch(p), document.getElementById("sketch") as HTMLElement);
+	Carousel3D(selectTrack);
 </script>
 
 <style is:global>
+
+@font-face {
+  font-family: "Unbounded";
+  src: url("/fonts/Unbounded-VariableFont_wght.ttf") format("truetype");
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrainsMono";
+  src: url("/fonts/JetBrainsMono-VariableFont_wght.ttf") format("truetype");
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
 	html, body {
 	  margin: 0;
 	  padding: 0;
-	  overflow: hidden;
-	  background: #000;
+	  background: #e3e3db;
+	  box-sizing: border-box;
 	}
 	#sketch,
 	#sketch canvas {
 	  display: block;
+	  width: 100vw;
+  	  height: 100vh;
 	}
+
+	nav, footer {
+		position: fixed;
+		left: 0;
+		right: 0;
+		box-sizing: border-box;
+		padding: 2em;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		z-index: 2;
+	}
+	p {
+		font-family: "Unbounded", sans-serif;
+		font-weight: 400;
+		font-size: 1rem;
+		color: #0f0f0f;
+	}
+
+	nav {
+		top: 0;
+	}
+	footer {
+		bottom: 0;
+		pointer-events: none;
+	}
+
+	#carousel3d {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		width: 100vw;
+		height: 20vh;
+		overflow: hidden;
+		z-index: 1;
+		cursor: pointer;
+	}
+
+	nav {
+  align-items: flex-start;
+}
+
+.nav-experience,
+#songs-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+#songs-info p {
+  margin: 0;
+  font-family: "JetBrainsMono", monospace;
+}
+
   </style>
