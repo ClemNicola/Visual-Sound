@@ -1,5 +1,6 @@
 ---
 import { DATA_SONGS } from "../constants/song";
+import { params } from "../constants/params";
 ---
 
 <html lang="en">
@@ -28,7 +29,10 @@ import { DATA_SONGS } from "../constants/song";
 		</nav>
 		<div id="sketch"></div>
 		<footer>
-			<p>Modify Effects (coming soon) </p>
+			<div>
+				<p>Modify Effects (coming soon) </p>
+				<input data-param="ampSmoothing" type="range" min="0.0001" max="1" step="0.001" value={params.ampSmoothing} />
+			</div>
 			<p>By Clement Nicolas</p>
 		</footer>
 		<canvas id="carousel3d"></canvas>
@@ -42,13 +46,22 @@ import { DATA_SONGS } from "../constants/song";
 	// import { sketch } from "../sketches/main";
 	import { Carousel3D } from "../sketches/carousel";
 	import { WebGLSketch } from "../sketches/webglTest";
+	import { params } from "../constants/params";
 	import p5 from "p5";
+
 	(window as any).p5 = p5;
 	await import("p5/lib/addons/p5.sound");
-	// p5.sound peut lancer setup() avant preload() si la page n'est pas encore chargée
 	if (document.readyState !== "complete") {
 		await new Promise((resolve) => window.addEventListener("load", resolve, { once: true }));
 	}
+
+	document.querySelectorAll<HTMLInputElement>("[data-param]").forEach((input) => {
+		input.addEventListener("input", () => {
+			if(input.dataset.param === "ampSmoothing") {
+				params.ampSmoothing = parseFloat(input.value);
+			}
+		});
+	})
 
 	let selectTrack = (_index: number) => {}
 
@@ -94,13 +107,13 @@ import { DATA_SONGS } from "../constants/song";
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		z-index: 2;
+		z-index: 2	;
 	}
 	p {
 		font-family: "Unbounded", sans-serif;
 		font-weight: 400;
 		font-size: 1rem;
-		color: #0f0f0f;
+		mix-blend-mode: difference;
 	}
 
 	nav {
@@ -108,7 +121,7 @@ import { DATA_SONGS } from "../constants/song";
 	}
 	footer {
 		bottom: 0;
-		pointer-events: none;
+		pointer-events: auto;
 	}
 
 	#carousel3d {

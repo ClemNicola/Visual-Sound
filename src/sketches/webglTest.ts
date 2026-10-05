@@ -1,13 +1,11 @@
 import p5 from "p5";
 import { createPlayer } from "./player";
 import { DATA_SONGS } from "../constants/song";
-import { PlaneHelper } from "three";
+import { params, type Params } from "../constants/params";
 
 const VERTEX_SHADER = "/shaders/vertex.vert";
 const FRAGMENT_SHADER = "/shaders/fragment.frag";
 const DMAP = "/displacement/turbulence.webp";
-// 0..1 : plus bas = amplitude plus douce, plus haut = plus réactive
-const AMP_SMOOTHING = 0.09;
 
 export type SketchState = {
   song: p5.SoundFile;
@@ -116,7 +114,7 @@ function draw(p: p5, state: SketchState) {
   state.smoothAmplitude = p.lerp(
     state.smoothAmplitude,
     mapVolume,
-    AMP_SMOOTHING,
+    params.ampSmoothing,
   );
   state.myShaders.setUniform("uAmplitude", state.smoothAmplitude);
   state.myShaders.setUniform("uTime", p.frameCount);
