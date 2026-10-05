@@ -25,25 +25,25 @@ void main (){
   
     vec3 color = vec3(vTexCoord.y);
 
+    //Pour le rectanle jusqu'a ligne 37
+    //vec2 ratio = vec2(
+    //    min((uResolution.x / uResolution.y) / (uTextureResolution.x / uTextureResolution.y), 1.0),
+    //    min((uResolution.y / uResolution.x) / (uTextureResolution.y / uTextureResolution.x), 1.0)
+    //);
 
-    vec2 ratio = vec2(
-        min((uResolution.x / uResolution.y) / (uTextureResolution.x / uTextureResolution.y), 1.0),
-        min((uResolution.y / uResolution.x) / (uTextureResolution.y / uTextureResolution.x), 1.0)
-    );
+    //vec2 uv = vec2(
+    //    vTexCoord.x * ratio.x + (1.0 - ratio.x) * 0.5,
+    //    vTexCoord.y * ratio.y + (1.0 - ratio.y) * 0.5
+    //);
 
-    vec2 uv = vec2(
-        vTexCoord.x * ratio.x + (1.0 - ratio.x) * 0.5,
-        vTexCoord.y * ratio.y + (1.0 - ratio.y) * 0.5
-    );
-
-    //vec2 uv = vTexCoord;
+    vec2 uv = vTexCoord;
     
     
 
     float frequency = uFrequency;
     float amplitude = uAmplitude;
 
-    //float distortion = sin(uv.y * uFrequency + (uTime * 0.01)) * uAmplitude;
+    float distortion = sin(uv.y * uFrequency + (uTime * 0.01)) * uAmplitude;
 
     vec4 dMap = texture2D(uDmap, uv);
 
@@ -61,4 +61,5 @@ void main (){
 
     gl_FragColor = texture2D(uTexture, uv + vec2(distortion, 0.0));
     //gl_FragColor = mix(cover, camera, 0.2);
+    
 }

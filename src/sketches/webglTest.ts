@@ -1,11 +1,13 @@
 import p5 from "p5";
 import { createPlayer } from "./player";
 
-const AUDIO_URL = "/music/siente.mp3";
+const AUDIO_URL = "/music/amore.mp3";
 const VERTEX_SHADER = "/shaders/vertex.vert";
 const FRAGMENT_SHADER = "/shaders/fragment.frag";
-const IMG_1 = "/images/bigroom_sensual.webp";
-const DMAP = "/displacement/worely.webp";
+const IMG_1 = "/images/amore_tossico.webp";
+const DMAP = "/displacement/turbulence.webp";
+// 0..1 : plus bas = amplitude plus douce, plus haut = plus réactive
+const AMP_SMOOTHING = 0.5;
 
 export type SketchState = {
   song: p5.SoundFile;
@@ -18,6 +20,7 @@ export type SketchState = {
   image: p5.Image;
   dMap: p5.Image;
   capture: p5.MediaElement;
+  smoothAmplitude: number;
 };
 
 export const WebGLSketch = (p: p5) => {
@@ -62,11 +65,15 @@ function setup(p: p5, state: SketchState) {
   state.amplitude.setInput(state.song);
   state.fft.setInput(state.song);
 
+  state.smoothAmplitude = 0.05;
+
   createPlayer(state.song);
 }
 
 function draw(p: p5, state: SketchState) {
-  p.background(0);
+  // p.background(0);
+  state.bgColor = p.color(40, 40, 40, 175);
+  p.background(state.bgColor);
   p.noStroke();
   state.fft.analyze();
   const volume = state.amplitude.getLevel();
@@ -75,18 +82,23 @@ function draw(p: p5, state: SketchState) {
 
   const radius = p.width / 8;
 
-  const mapVolume = p.map(volume, 0, 1.0, 0, 1.0);
+  const mapVolume = p.map(volume, 0, 1.0, 0.1, 1.2);
   const mapFreq = p.map(frequency, 0, 5.0, 0.0, 0.8);
 
-  state.myShaders.setUniform("uTime", p.frameCount * 0.01);
-
   state.myShaders.setUniform("uFrequency", mapFreq);
-  state.myShaders.setUniform("uAmplitude", mapVolume);
+  state.smoothAmplitude = p.lerp(
+    state.smoothAmplitude,
+    mapVolume,
+    AMP_SMOOTHING,
+  );
+  state.myShaders.setUniform("uAmplitude", state.smoothAmplitude);
+  state.myShaders.setUniform("uTime", p.frameCount);
+
   state.myShaders.setUniform("uTexture", state.image);
   //state.myShaders.setUniform("uCamera", state.capture);
   state.myShaders.setUniform("uDmap", state.dMap);
   p.rotateY(p.PI);
-  p.sphere(radius, 200, 200);
+  p.sphere(radius, 400, 400);
   //p.rect(0, 0, p.width, p.height);
 }
 

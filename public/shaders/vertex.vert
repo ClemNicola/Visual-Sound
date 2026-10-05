@@ -167,17 +167,43 @@ float pnoise(in vec3 P, in vec3 rep) {
     return 2.2 * n_xyz;
 }
 
+float fbm(vec3 p){
+  float value = 0.0;
+  float amp = 0.5;
+  for(int i = 0; i < 5; i++){
+    value += amp * cnoise(p);
+    p *= 2.0;
+    amp *= 0.5;
+  }
+  return value;
+}
+
 void main() {
+    //pour le rectangle
+    //float displacement = uAmplitude * pnoise(aNormal + (uTime * 0.01), vec3(1.0));
+    //vNoise = pnoise(aNormal, vec3(0.0));
+    //vec4 newPosition = vec4(aPosition; 1.0);
 
-    float displacement = uAmplitude * pnoise(aNormal + (uTime * 0.01), vec3(1.0));
+    float t = uTime * 0.01;
+    vec3 p = aNormal * uFrequency;
 
+    vec3 q = vec3(
+      fbm(p + vec3(0.0, 0.0, t)),
+      fbm(p + vec3(5.2, 2.3, t)),
+      fbm(p + vec3(1.7, 9.2, t))
+    );
+
+    float noise = fbm(p * q);
+    float displacement = uAmplitude * noise;
+
+
+    //float displacement = uAmplitude * pnoise(aNormal * 2.0 + (uTime * 0.01), vec3(7.0));
+    //vNoise = pnoise(aNormal, vec3(0.0));
     vec4 newPosition = vec4(aPosition + displacement * aNormal, 1.0);
-    
-    vNoise = pnoise(aNormal, vec3(0.0));
-
+    vNoise = noise;
     vNormal = aNormal;
-
     vTexCoord = aTexCoord;
 
     gl_Position = uProjectionMatrix * uModelViewMatrix * newPosition;
+
 }
