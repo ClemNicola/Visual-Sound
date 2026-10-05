@@ -33,7 +33,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     distortionSmoothing: 0.75,
   };
 
-  const slideWidth = 2.75;
+  const slideWidth = window.innerWidth <= 1600 ? 2.15 : 2.75;
   const slideHeight = 2.5;
   const gap = 0.2;
   const slideCount = DATA_SONGS.length;
@@ -120,7 +120,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     distortionFactor: number,
   ) => {
     const distortionCenter = new THREE.Vector2(0, 0);
-    const distortionRadius = 1.5;
+    const distortionRadius = 2.5;
     const maxCurvatur = settings.maxDistortion * distortionFactor;
 
     const positionAttritube = mesh.geometry.attributes.position;
@@ -166,16 +166,20 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     "wheel",
     (e) => {
       e.preventDefault();
-      const wheelStrength = Math.abs(e.deltaY) * 0.001;
+      const delta =
+        Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      const wheelStrength = Math.abs(delta) * 0.001;
       targetDistortionFactor = Math.min(
         1.0,
         targetDistortionFactor + wheelStrength,
       );
 
-      targetPosition -= e.deltaY * settings.wheelSensitivity;
-      isScrolling = true;
-      autoScrollSpeed =
-        Math.min(Math.abs(e.deltaY) * 0.0005, 0.05) * Math.sign(e.deltaY);
+      targetPosition -= delta * settings.wheelSensitivity;
+      const isTrackpad = e.deltaMode === WheelEvent.DOM_DELTA_PIXEL;
+      autoScrollSpeed = isTrackpad
+        ? 0
+        : Math.min(Math.abs(delta) * 0.0005, 0.05) * Math.sign(delta);
+      isScrolling = !isTrackpad;
 
       clearTimeout(scrollTimeout);
       scrollTimeout = window.setTimeout(() => {
@@ -234,6 +238,33 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     render.setSize(width, height);
+  });
+
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+
+  const focusSlide = (index: number) => {
+    const destination = index * slideUnit;
+    let delta = destination - targetPosition;
+    delta = ((delta % totalWidth) + totalWidth) % totalWidth;
+    if (delta > totalWidth / 2) delta -= totalWidth;
+
+    autoScrollSpeed = 0;
+    isScrolling = false;
+    targetPosition += delta;
+    targetDistortionFactor = Math.min(1.0, targetDistortionFactor + 0.4);
+  };
+
+  canvas.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+
+    const hit = raycaster.intersectObjects(slides)[0];
+    if (!hit) return;
+    focusSlide(hit.object.userData.index as number);
   });
 
   const animate = (animateTime: number) => {
