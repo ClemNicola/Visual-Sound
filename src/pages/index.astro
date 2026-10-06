@@ -29,9 +29,24 @@ import { params } from "../constants/params";
 		</nav>
 		<div id="sketch"></div>
 		<footer>
-			<div>
-				<p>Modify Effects (coming soon) </p>
-				<input data-param="ampSmoothing" type="range" min="0.0001" max="1" step="0.001" value={params.ampSmoothing} />
+			<div class="effects-panel">
+				<div class="param-container">
+					<label for="sphere">Sphere</label>
+					<input id="sphere" data-param="sphere" type="checkbox" checked={params.sphere} />
+				</div>
+				<div class="param-container">
+					<label for="ampSmoothing">Amplitude Smoothing</label>
+					<input id="ampSmoothing" data-param="ampSmoothing" type="range" min="0.0001" max="1" step="0.001" value={params.ampSmoothing} />
+				</div>
+				<div class="param-container">
+					<label for="top">Top</label>
+					<input id="top" data-param="top" type="range" min="10" max="600" step="10" value={params.top} />
+				</div>
+				<div class="param-container">
+					<label for="radius">Radius</label>
+					<input id="radius" data-param="radius" type="range" min="4" max="24" step="1" value={params.radius} />
+				</div>
+				<p>Modify Effects </p>
 			</div>
 			<p>By Clement Nicolas</p>
 		</footer>
@@ -46,7 +61,7 @@ import { params } from "../constants/params";
 	// import { sketch } from "../sketches/main";
 	import { Carousel3D } from "../sketches/carousel";
 	import { WebGLSketch } from "../sketches/webglTest";
-	import { params } from "../constants/params";
+	import { params, type Params } from "../constants/params";
 	import p5 from "p5";
 
 	(window as any).p5 = p5;
@@ -57,9 +72,9 @@ import { params } from "../constants/params";
 
 	document.querySelectorAll<HTMLInputElement>("[data-param]").forEach((input) => {
 		input.addEventListener("input", () => {
-			if(input.dataset.param === "ampSmoothing") {
-				params.ampSmoothing = parseFloat(input.value);
-			}
+			const key = input.dataset.param as keyof Params;
+			const value = input.type === "checkbox" ? input.checked : input.valueAsNumber;
+			(params as Record<string, number | boolean>) [key] = value;
 		});
 	})
 
@@ -121,7 +136,12 @@ import { params } from "../constants/params";
 	}
 	footer {
 		bottom: 0;
+		/* aligne "By Clement Nicolas" sur la dernière ligne ("Modify Effects") */
+		align-items: flex-end;
 		pointer-events: auto;
+	}
+	footer p {
+		margin: 0;
 	}
 
 	#carousel3d {
@@ -152,4 +172,95 @@ import { params } from "../constants/params";
   font-family: "JetBrainsMono", monospace;
 }
 
+
+.effects-panel {
+	--ink: #111;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.param-container {
+	font-family: "JetBrainsMono", monospace;
+	font-size: 0.7rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--ink);
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	width: 180px;
+}
+.param-container label {
+	cursor: pointer;
+}
+/* checkbox : label à gauche, case à droite sur la même ligne */
+.param-container:has(input[type="checkbox"]) {
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.param-container input[type="range"] {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 100%;
+	height: 14px;
+	margin: 0;
+	background: transparent;
+	cursor: pointer;
+}
+.param-container input[type="range"]::-webkit-slider-runnable-track {
+	height: 1px;
+	background: var(--ink);
+}
+.param-container input[type="range"]::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	width: 10px;
+	height: 10px;
+	margin-top: -4.5px;
+	background: var(--ink);
+	border: none;
+	border-radius: 0;
+}
+.param-container input[type="range"]::-moz-range-track {
+	height: 1px;
+	background: var(--ink);
+}
+.param-container input[type="range"]::-moz-range-thumb {
+	width: 10px;
+	height: 10px;
+	background: var(--ink);
+	border: none;
+	border-radius: 0;
+}
+
+.param-container input[type="checkbox"] {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 12px;
+	height: 12px;
+	margin: 0;
+	border: 1px solid var(--ink);
+	background: transparent;
+	cursor: pointer;
+	display: grid;
+	place-content: center;
+}
+.param-container input[type="checkbox"]::before {
+	content: "";
+	width: 6px;
+	height: 6px;
+	background: var(--ink);
+	transform: scale(0);
+	transition: transform 0.12s ease;
+}
+.param-container input[type="checkbox"]:checked::before {
+	transform: scale(1);
+}
+
+.param-container input:focus-visible {
+	outline: 1px dashed var(--ink);
+	outline-offset: 3px;
+}
   </style>

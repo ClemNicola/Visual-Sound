@@ -17,7 +17,6 @@ export type SketchState = {
   myShaders: p5.Shader;
   image: p5.Image;
   dMap: p5.Image;
-  capture: p5.MediaElement;
   smoothAmplitude: number;
 };
 
@@ -77,11 +76,8 @@ function setup(p: p5, state: SketchState) {
   state.amplitude = new p5.Amplitude();
   state.fft = new p5.FFT();
   state.peakDetect = new p5.PeakDetect(400, 4000, 0.05);
-  //state.capture = p.createCapture(p.VIDEO) as p5.MediaElement;
-  //state.capture.hide();
 
   state.myShaders.setUniform("uTexture", state.image);
-  // state.myShaders.setUniform("uCamera", state.capture);
   state.myShaders.setUniform("uDmap", state.dMap);
   state.myShaders.setUniform("uResolution", [p.width, p.height]);
   state.myShaders.setUniform("uTextureResolution", [
@@ -105,10 +101,10 @@ function draw(p: p5, state: SketchState) {
   let frequency = state.fft.getCentroid();
   frequency *= 0.001;
 
-  const radius = p.width / 8;
-
   const mapVolume = p.map(volume, 0, 1.0, 0.1, 1.2);
   const mapFreq = p.map(frequency, 0, 5.0, 0.0, 0.8);
+
+  state.myShaders.setUniform("uIsRect", params.sphere ? 0.0 : 1.0);
 
   state.myShaders.setUniform("uFrequency", mapFreq);
   state.smoothAmplitude = p.lerp(
@@ -120,11 +116,16 @@ function draw(p: p5, state: SketchState) {
   state.myShaders.setUniform("uTime", p.frameCount);
 
   state.myShaders.setUniform("uTexture", state.image);
-  //state.myShaders.setUniform("uCamera", state.capture);
+
   state.myShaders.setUniform("uDmap", state.dMap);
-  p.rotateY(p.PI);
-  p.sphere(radius, 400, 400);
-  //p.rect(0, 0, p.width, p.height);
+
+  if (params.sphere) {
+    const radius = p.width / params.radius;
+    p.rotateY(p.PI);
+    p.sphere(radius, params.top, params.top);
+  } else {
+    p.plane(p.width, p.height, params.top, params.top);
+  }
 }
 
 function keyPressed(p: p5, state: SketchState) {

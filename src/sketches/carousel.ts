@@ -33,7 +33,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     distortionSmoothing: 0.75,
   };
 
-  const slideWidth = window.innerWidth <= 1600 ? 2.15 : 2.75;
+  const slideWidth = window.innerWidth <= 1600 ? 2.15 : 2.5;
   const slideHeight = 2.5;
   const gap = 0.2;
   const slideCount = DATA_SONGS.length;

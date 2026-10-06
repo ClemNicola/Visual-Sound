@@ -11,6 +11,7 @@ uniform mat4 uModelViewMatrix;
 uniform float uTime;
 uniform float uFrequency;
 uniform float uAmplitude;
+uniform float uIsRect;
 
 varying vec3 vNormal;
 varying vec2 vTexCoord;
@@ -179,13 +180,9 @@ float fbm(vec3 p){
 }
 
 void main() {
-    //pour le rectangle
-    //float displacement = uAmplitude * pnoise(aNormal + (uTime * 0.01), vec3(1.0));
-    //vNoise = pnoise(aNormal, vec3(0.0));
-    //vec4 newPosition = vec4(aPosition; 1.0);
-
     float t = uTime * 0.01;
-    vec3 p = aNormal * uFrequency;
+    vec3 base = mix(aNormal, vec3(aTexCoord * 2.0 - 1.0, 0.0), uIsRect);
+    vec3 p = base * uFrequency;
 
     vec3 q = vec3(
       fbm(p + vec3(0.0, 0.0, t)),
@@ -196,6 +193,7 @@ void main() {
     float noise = fbm(p * q);
     float displacement = uAmplitude * noise;
 
+    displacement *= mix(1.0, 100.0, uIsRect);
 
     //float displacement = uAmplitude * pnoise(aNormal * 2.0 + (uTime * 0.01), vec3(7.0));
     //vNoise = pnoise(aNormal, vec3(0.0));
