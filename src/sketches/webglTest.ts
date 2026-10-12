@@ -27,6 +27,13 @@ export type SketchState = {
 export const WebGLSketch = (p: p5) => {
   const state = {} as SketchState;
 
+  let trackRequest = 0;
+  let loadTimeout: number | undefined;
+  let resumeAfterLoad = false;
+
+  const disposeSound = (sound: p5.SoundFile) =>
+    (sound as unknown as { dispose: () => void }).dispose();
+
   const selectTrack = (index: number) => {
     const track = DATA_SONGS[index];
     const title = document.getElementById("song-title");
@@ -36,20 +43,36 @@ export const WebGLSketch = (p: p5) => {
     if (artist) artist.textContent = `artist: ${track.artist}`;
     if (album) album.textContent = `album: ${track.album}`;
 
-    const wasPlaying = state.song.isPlaying();
+    resumeAfterLoad = resumeAfterLoad || state.song.isPlaying();
     state.song.stop();
 
-    state.image = p.loadImage(track.cover, (img) => {
-      state.myShaders.setUniform("uTexture", img);
-      state.myShaders.setUniform("uTextureResolution", [img.width, img.height]);
-    });
+    const request = ++trackRequest;
 
-    state.song = p.loadSound(track.song, (sound) => {
-      state.amplitude.setInput(sound);
-      state.fft.setInput(sound);
-      state.player.setSong(sound);
-      if (wasPlaying) sound.play();
-    });
+    clearTimeout(loadTimeout);
+    loadTimeout = window.setTimeout(() => {
+      p.loadImage(track.cover, (img) => {
+        if (request !== trackRequest) return;
+        state.image = img;
+        state.myShaders.setUniform("uTexture", img);
+        state.myShaders.setUniform("uTextureResolution", [img.width, img.height]);
+      });
+
+      p.loadSound(track.song, (sound) => {
+        if (request !== trackRequest) {
+          disposeSound(sound);
+          return;
+        }
+
+        state.song.stop();
+        disposeSound(state.song);
+        state.song = sound;
+        state.amplitude.setInput(sound);
+        state.fft.setInput(sound);
+        state.player.setSong(sound);
+        if (resumeAfterLoad) sound.play();
+        resumeAfterLoad = false;
+      });
+    }, 250);
   };
 
   const selectNoise = (id: string) => {
