@@ -20,6 +20,7 @@ export type SketchState = {
   smoothAmplitude: number;
   bassMin: number;
   bassMax: number;
+  morph: number;
 };
 
 export const WebGLSketch = (p: p5) => {
@@ -97,6 +98,12 @@ function setup(p: p5, state: SketchState) {
   state.fft.setInput(state.song);
 
   state.smoothAmplitude = 0.05;
+
+  if (params.sphere) {
+    state.morph = 1;
+  } else {
+    state.morph = 0;
+  }
 }
 
 function draw(p: p5, state: SketchState) {
@@ -112,10 +119,11 @@ function draw(p: p5, state: SketchState) {
   const mapVolume = p.map(volume, 0, 1.0, 0, 1.3);
   const mapFreq = p.map(frequency, 0, 5.0, 0.0, 0.8);
 
-  state.myShaders.setUniform("uIsRect", params.sphere ? 0.0 : 1.0);
-
   state.myShaders.setUniform("uFrequency", mapFreq);
   state.smoothAmplitude = p.lerp(state.smoothAmplitude, mapVolume, params.ampSmoothing);
+  state.morph = p.lerp(state.morph, params.sphere ? 1.0 : 0.0, 0.1);
+  state.myShaders.setUniform("uMorph", state.morph);
+  state.myShaders.setUniform("uRadius", p.width / params.radius);
   state.myShaders.setUniform("uOctave", params.octave);
   state.myShaders.setUniform("uWarpStrength", params.warpStrength);
   state.myShaders.setUniform("uAmplitude", state.smoothAmplitude);
@@ -124,13 +132,15 @@ function draw(p: p5, state: SketchState) {
 
   state.myShaders.setUniform("uDmap", state.dMap);
 
-  if (params.sphere) {
-    const radius = p.width / params.radius;
-    p.rotateY(p.PI);
-    p.sphere(radius, params.top, params.top);
-  } else {
-    p.plane(p.width, p.height, params.top, params.top);
-  }
+  p.plane(1, 1, params.top, params.top);
+
+  // if (params.sphere) {
+  //   const radius = p.width / params.radius;
+  //   p.rotateY(p.PI);
+  //   p.sphere(radius, params.top, params.top);
+  // } else {
+  //   p.plane(p.width, p.height, params.top, params.top);
+  // }
 }
 
 function keyPressed(p: p5, state: SketchState) {

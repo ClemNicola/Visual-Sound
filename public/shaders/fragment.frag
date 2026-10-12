@@ -15,7 +15,7 @@ uniform float uTime;
 uniform float uFrequency;
 uniform float uAmplitude;
 
-uniform float uIsRect;
+uniform float uMorph;
 
 mat2 scale(vec2 _scale) {
     return mat2(_scale.x, 0.0, 0.0, _scale.y);
@@ -39,7 +39,7 @@ void main (){
     );
 
     vec2 uvCover = coverUv(vTexCoord, uResolution, uTextureResolution);
-    vec2 uv = mix(vTexCoord, uvCover, uIsRect);
+    vec2 uv = mix(uvCover, vTexCoord, uMorph);
     
     
     float frequency = uFrequency;
