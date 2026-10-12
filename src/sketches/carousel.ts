@@ -3,8 +3,8 @@ import { DATA_SONGS } from "../constants/song";
 
 export const Carousel3D = (selectTrack: (index: number) => void) => {
   const canvas = document.getElementById("carousel3d") as HTMLCanvasElement;
-  const width = canvas.clientWidth;
-  const height = canvas.clientHeight;
+  let width = canvas.clientWidth;
+  let height = canvas.clientHeight;
   const render = new THREE.WebGLRenderer({
     canvas,
     alpha: true,
@@ -12,7 +12,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     preserveDrawingBuffer: true,
   });
 
-  render.setSize(width, height);
+  render.setSize(width, height, false);
   render.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   const scene = new THREE.Scene();
@@ -33,7 +33,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     distortionSmoothing: 0.75,
   };
 
-  const slideWidth = window.innerWidth <= 1600 ? 2.15 : 2.75;
+  const slideWidth = window.innerWidth <= 1600 ? 2.15 : 2.5;
   const slideHeight = 2.5;
   const gap = 0.2;
   const slideCount = DATA_SONGS.length;
@@ -53,7 +53,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
   let currentDistortionFactor = 0;
   let targetDistortionFactor = 0;
   let peakVelocity = 0;
-  let velocityHistory = [0, 0, 0, 0, 0];
+  const velocityHistory = [0, 0, 0, 0, 0];
   let scrollTimeout = 0;
 
   const correctImageColor = (texture: THREE.Texture) => {
@@ -86,8 +86,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
         material.needsUpdate = true;
 
         const imgAspect =
-          (texture.image as HTMLImageElement).width /
-          (texture.image as HTMLImageElement).height;
+          (texture.image as HTMLImageElement).width / (texture.image as HTMLImageElement).height;
         const slideAspect = slideWidth / slideHeight;
 
         if (imgAspect > slideAspect) {
@@ -114,11 +113,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     slide.userData.currentX = slide.position.x;
   });
 
-  const updateCurve = (
-    mesh: THREE.Mesh,
-    worldPositionX: number,
-    distortionFactor: number,
-  ) => {
+  const updateCurve = (mesh: THREE.Mesh, worldPositionX: number, distortionFactor: number) => {
     const distortionCenter = new THREE.Vector2(0, 0);
     const distortionRadius = 2.5;
     const maxCurvatur = settings.maxDistortion * distortionFactor;
@@ -132,18 +127,12 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
 
       const vertexWorldPosX = worldPositionX + x;
       const distFromCenter = Math.sqrt(
-        Math.pow(vertexWorldPosX - distortionCenter.x, 2) +
-          Math.pow(y - distortionCenter.y, 2),
+        Math.pow(vertexWorldPosX - distortionCenter.x, 2) + Math.pow(y - distortionCenter.y, 2),
       );
 
-      const distortionStrengh = Math.max(
-        0,
-        1 - distFromCenter / distortionRadius,
-      );
+      const distortionStrengh = Math.max(0, 1 - distFromCenter / distortionRadius);
 
-      const curveZ =
-        Math.pow(Math.sin((distortionStrengh * Math.PI) / 2), 1.5) *
-        maxCurvatur;
+      const curveZ = Math.pow(Math.sin((distortionStrengh * Math.PI) / 2), 1.5) * maxCurvatur;
 
       positionAttritube.setZ(i, curveZ);
     }
@@ -152,7 +141,11 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     mesh.geometry.computeVertexNormals();
   };
 
+  const isFromUi = (target: EventTarget | null) =>
+    target instanceof Element && target.closest("nav, footer, .player") !== null;
+
   window.addEventListener("keydown", (e) => {
+    if (isFromUi(e.target)) return;
     if (e.key === "ArrowLeft") {
       targetPosition += slideUnit;
       targetDistortionFactor = Math.min(1.0, targetDistortionFactor + 0.3);
@@ -165,14 +158,11 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
   window.addEventListener(
     "wheel",
     (e) => {
+      if (isFromUi(e.target)) return;
       e.preventDefault();
-      const delta =
-        Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
       const wheelStrength = Math.abs(delta) * 0.001;
-      targetDistortionFactor = Math.min(
-        1.0,
-        targetDistortionFactor + wheelStrength,
-      );
+      targetDistortionFactor = Math.min(1.0, targetDistortionFactor + wheelStrength);
 
       targetPosition -= delta * settings.wheelSensitivity;
       const isTrackpad = e.deltaMode === WheelEvent.DOM_DELTA_PIXEL;
@@ -192,6 +182,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
   window.addEventListener(
     "touchstart",
     (e) => {
+      if (isFromUi(e.target)) return;
       touchStartX = e.touches[0].clientX;
       touchLastX = touchStartX;
       isScrolling = false;
@@ -202,15 +193,13 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
   window.addEventListener(
     "touchmove",
     (e) => {
+      if (isFromUi(e.target)) return;
       e.preventDefault();
       const touchX = e.touches[0].clientX;
       const deltaX = touchX - touchLastX;
       touchLastX = touchX;
       const touchStrength = Math.abs(deltaX) * 0.02;
-      targetDistortionFactor = Math.min(
-        1.0,
-        targetDistortionFactor + touchStrength,
-      );
+      targetDistortionFactor = Math.min(1.0, targetDistortionFactor + touchStrength);
 
       targetPosition -= deltaX * settings.touchSensitivity;
       isScrolling = true;
@@ -218,7 +207,8 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     { passive: false },
   );
 
-  window.addEventListener("touchend", () => {
+  window.addEventListener("touchend", (e) => {
+    if (isFromUi(e.target)) return;
     const velocity = (touchLastX - touchStartX) * 0.005;
     if (Math.abs(velocity) > 0.5) {
       autoScrollSpeed = velocity * settings.momentumMultiplier * 0.05;
@@ -235,9 +225,12 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
   });
 
   window.addEventListener("resize", () => {
+    // Relire la taille : le canvas suit le CSS (100vw × 20dvh)
+    width = canvas.clientWidth;
+    height = canvas.clientHeight;
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    render.setSize(width, height);
+    render.setSize(width, height, false);
   });
 
   const raycaster = new THREE.Raycaster();
@@ -288,8 +281,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     currentPosition += (targetPosition - currentPosition) * settings.smoothing;
 
     const indexCover =
-      ((Math.round(currentPosition / slideUnit) % slideCount) + slideCount) %
-      slideCount;
+      ((Math.round(currentPosition / slideUnit) % slideCount) + slideCount) % slideCount;
 
     if (indexCover !== previousPosition) {
       previousPosition = indexCover;
@@ -300,9 +292,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     velocityHistory.push(currentVelocity);
     velocityHistory.shift();
 
-    const avgVelocity =
-      velocityHistory.reduce((sum, val) => sum + val, 0) /
-      velocityHistory.length;
+    const avgVelocity = velocityHistory.reduce((sum, val) => sum + val, 0) / velocityHistory.length;
 
     if (avgVelocity > peakVelocity) {
       peakVelocity = avgVelocity;
@@ -317,23 +307,17 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     const movementDistorition = Math.min(1.0, currentVelocity * 0.1);
 
     if (currentVelocity > 0.05) {
-      targetDistortionFactor = Math.max(
-        targetDistortionFactor,
-        movementDistorition,
-      );
+      targetDistortionFactor = Math.max(targetDistortionFactor, movementDistorition);
     }
 
     if (isDecelerating || avgVelocity < 0.2) {
-      const decayRate = isDecelerating
-        ? settings.distortionDecay
-        : settings.distortionDecay * 0.9;
+      const decayRate = isDecelerating ? settings.distortionDecay : settings.distortionDecay * 0.9;
 
       targetDistortionFactor *= decayRate;
     }
 
     currentDistortionFactor +=
-      (targetDistortionFactor - currentDistortionFactor) *
-      settings.distortionSmoothing;
+      (targetDistortionFactor - currentDistortionFactor) * settings.distortionSmoothing;
 
     slides.forEach((slide, index) => {
       let baseX = index * slideUnit - currentPosition;
@@ -343,8 +327,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
         baseX -= totalWidth;
       }
 
-      const isWrapping =
-        Math.abs(baseX - slide.userData.targetX) > slideUnit * 2;
+      const isWrapping = Math.abs(baseX - slide.userData.targetX) > slideUnit * 2;
 
       if (isWrapping) {
         slide.userData.currentX = baseX;

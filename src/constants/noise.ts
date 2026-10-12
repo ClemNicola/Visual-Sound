@@ -11,23 +11,23 @@ interface Noise {
 
 export const DATA_NOISE: Noise[] = [
   {
-    id: "perlin",
-    name: "Perlin Noise",
+    id: "1",
+    name: "Perlin",
     noise_image: PERLIN_NOISE,
   },
   {
-    id: "worely",
-    name: "Worely Noise",
+    id: "2",
+    name: "Worely",
     noise_image: WORELY_NOISE,
   },
   {
-    id: "fbm",
-    name: "FBM Noise",
+    id: "3",
+    name: "FBM",
     noise_image: FBM_NOISE,
   },
   {
-    id: "turbulence",
-    name: "Turbulence Noise",
+    id: "4",
+    name: "Turbulence",
     noise_image: TURBULENCE_NOISE,
   },
 ];

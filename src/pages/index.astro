@@ -1,142 +1,655 @@
 ---
 import { DATA_SONGS } from "../constants/song";
+import { DATA_NOISE } from "../constants/noise";
+import { params } from "../constants/params";
+
+const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DATA_NOISE[0];
 ---
 
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<link rel="preload" href="/fonts/JetBrainsMono-VariableFont_wght.ttf" as="font" type="font/ttf" crossorigin />
-		<link rel="preload" href="/fonts/Unbounded-VariableFont_wght.ttf" as="font" type="font/ttf" crossorigin />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Visual Sound</title>
-	</head>
-	<body>
-		<nav>
-			<p>Visual Sound</p>		
-			<div class="nav-experience">
-				<p>Visual Experience</p>
-				<div id="songs-info">
-					<p id="song-title">title: {DATA_SONGS[0].title}</p>
-					<p id="song-artist">artist: {DATA_SONGS[0].artist}</p>
-					<p id="song-album">album: {DATA_SONGS[0].album}</p>
-				</div>
-			</div>
-			
-		</nav>
-		<div id="sketch"></div>
-		<footer>
-			<p>Modify Effects (coming soon) </p>
-			<p>By Clement Nicolas</p>
-		</footer>
-		<canvas id="carousel3d"></canvas>
-		
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <link
+      rel="preload"
+      href="/fonts/JetBrainsMono-VariableFont_wght.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/Unbounded-VariableFont_wght.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Visual Sound</title>
+  </head>
+  <body>
+    <nav>
+      <p>Visual Sound</p>
+      <div class="nav-experience">
+        <p>Information</p>
+        <div id="songs-info">
+          <p id="song-title">title: {DATA_SONGS[0].title}</p>
+          <p id="song-artist">artist: {DATA_SONGS[0].artist}</p>
+          <p id="song-album">album: {DATA_SONGS[0].album}</p>
+        </div>
+      </div>
+    </nav>
+    <div id="sketch"></div>
+    <footer>
+      <div class="effects-panel">
+        <div id="effects-params" class="effects-params">
+          <div class="param-container">
+            <label for="sphere">Sphere</label>
+            <input id="sphere" data-param="sphere" type="checkbox" checked={params.sphere} />
+          </div>
+          <div class="param-container">
+            <span id="noise-label">Noise</span>
+            <details class="noise-select">
+              <summary aria-labelledby="noise-label">
+                <img src={currentNoise.noise_image} alt="" />
+                <span>{currentNoise.name}</span>
+              </summary>
+              <div class="noise-list" role="listbox" aria-labelledby="noise-label">
+                {DATA_NOISE.map((noise) => (
+                  <button
+                    type="button"
+                    role="option"
+                    data-value={noise.id}
+                    aria-selected={noise.id === params.noise}
+                  >
+                    <img src={noise.noise_image} alt="" />
+                    {noise.name}
+                  </button>
+                ))}
+              </div>
+            </details>
+          </div>
+          <div class="param-container">
+            <label for="octave">Octave</label>
+            <input
+              id="octave"
+              data-param="octave"
+              type="range"
+              min="1"
+              max="6"
+              step="0.1"
+              value={params.octave}
+            />
+          </div>
+          <div class="param-container">
+            <label for="warpStrength">Noise Strength</label>
+            <input
+              id="warpStrength"
+              data-param="warpStrength"
+              type="range"
+              min="0"
+              max="2"
+              step="0.01"
+              value={params.warpStrength}
+            />
+          </div>
+          <div class="param-container">
+            <label for="ampSmoothing">Amplitude Smoothing</label>
+            <input
+              id="ampSmoothing"
+              data-param="ampSmoothing"
+              type="range"
+              min="0.0001"
+              max="0.7"
+              step="0.001"
+              value={params.ampSmoothing}
+            />
+          </div>
+          <div class="param-container">
+            <label for="top">Top</label>
+            <input
+              id="top"
+              data-param="top"
+              type="range"
+              min="10"
+              max="400"
+              step="10"
+              value={params.top}
+            />
+          </div>
+          <div class="param-container">
+            <label for="radius">Radius</label>
+            <input
+              id="radius"
+              data-param="radius"
+              type="range"
+              min="4"
+              max="24"
+              step="1"
+              value={params.radius}
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          class="effects-toggle"
+          aria-expanded="true"
+          aria-controls="effects-params"
+        >
+          Modify Effects
+        </button>
+      </div>
+      <p class="credit">By Clement Nicolas</p>
+    </footer>
+    <canvas id="carousel3d"></canvas>
+  </body>
 </html>
 
-
-
 <script>
-	// import { sketch } from "../sketches/main";
-	import { Carousel3D } from "../sketches/carousel";
-	import { WebGLSketch } from "../sketches/webglTest";
-	import p5 from "p5";
-	(window as any).p5 = p5;
-	await import("p5/lib/addons/p5.sound");
-	// p5.sound peut lancer setup() avant preload() si la page n'est pas encore chargée
-	if (document.readyState !== "complete") {
-		await new Promise((resolve) => window.addEventListener("load", resolve, { once: true }));
-	}
+  // import { sketch } from "../sketches/main";
+  import { Carousel3D } from "../sketches/carousel";
+  import { WebGLSketch } from "../sketches/webglTest";
+  import { params, type Params } from "../constants/params";
+  import p5 from "p5";
 
-	let selectTrack = (_index: number) => {}
+  (window as Window).p5 = p5;
+  await import("p5/lib/addons/p5.sound");
+  if (document.readyState !== "complete") {
+    await new Promise((resolve) => window.addEventListener("load", resolve, { once: true }));
+  }
 
-	new p5((p) => selectTrack = WebGLSketch(p), document.getElementById("sketch") as HTMLElement);
-	Carousel3D(selectTrack);
+  document.querySelectorAll<HTMLInputElement>("[data-param]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const key = input.dataset.param as keyof Params;
+      const value = input.type === "checkbox" ? input.checked : input.valueAsNumber;
+      (params as Record<string, number | boolean | string>)[key] = value;
+    });
+  });
+
+  // Panneau repliable : ouvert par défaut sur desktop, fermé sur mobile
+  const effectsPanel = document.querySelector<HTMLDivElement>(".effects-panel");
+  const effectsToggle = document.querySelector<HTMLButtonElement>(".effects-toggle");
+  const setEffectsOpen = (open: boolean) => {
+    effectsPanel?.classList.toggle("is-open", open);
+    effectsToggle?.setAttribute("aria-expanded", String(open));
+  };
+  setEffectsOpen(!window.matchMedia("(max-width: 768px)").matches);
+  effectsToggle?.addEventListener("click", () => {
+    setEffectsOpen(!effectsPanel?.classList.contains("is-open"));
+  });
+
+  const noiseSelect = document.querySelector<HTMLDetailsElement>(".noise-select");
+  const noiseButtons = document.querySelectorAll<HTMLButtonElement>(".noise-list button");
+
+  noiseButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = (button.dataset.value as string) ?? params.noise;
+      params.noise = id;
+      selectNoise(id);
+
+      noiseButtons.forEach((b) => b.setAttribute("aria-selected", String(b === button)));
+
+      const summary = noiseSelect?.querySelector("summary");
+      const img = button.querySelector("img");
+      if (summary && img) {
+        summary.querySelector("img")?.setAttribute("src", img.src);
+        summary.querySelector("span")!.textContent = button.textContent?.trim() ?? "";
+      }
+
+      if (noiseSelect) noiseSelect.open = false;
+    });
+  });
+
+  document.addEventListener("click", (event) => {
+    if (noiseSelect?.open && !noiseSelect.contains(event.target as Node)) {
+      noiseSelect.open = false;
+    }
+  });
+
+  let selectTrack = (_index: number) => {};
+  let selectNoise = (_id: string) => {};
+
+  new p5(
+    (p) => {
+      const api = WebGLSketch(p);
+      selectTrack = api.selectTrack;
+      selectNoise = api.selectNoise;
+    },
+    document.getElementById("sketch") as HTMLElement,
+  );
+  Carousel3D(selectTrack);
 </script>
 
 <style is:global>
+  @font-face {
+    font-family: "Unbounded";
+    src: url("/fonts/Unbounded-VariableFont_wght.ttf") format("truetype");
+    font-weight: 200 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "JetBrainsMono";
+    src: url("/fonts/JetBrainsMono-VariableFont_wght.ttf") format("truetype");
+    font-weight: 200 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: #e3e3db;
+    box-sizing: border-box;
+  }
+  #sketch,
+  #sketch canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh; /* mobile : suit la barre d'adresse qui apparaît / disparaît */
+  }
 
-@font-face {
-  font-family: "Unbounded";
-  src: url("/fonts/Unbounded-VariableFont_wght.ttf") format("truetype");
-  font-weight: 200 900;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "JetBrainsMono";
-  src: url("/fonts/JetBrainsMono-VariableFont_wght.ttf") format("truetype");
-  font-weight: 200 900;
-  font-style: normal;
-  font-display: swap;
-}
-	html, body {
-	  margin: 0;
-	  padding: 0;
-	  background: #e3e3db;
-	  box-sizing: border-box;
-	}
-	#sketch,
-	#sketch canvas {
-	  display: block;
-	  width: 100vw;
-  	  height: 100vh;
-	}
+  nav,
+  footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    box-sizing: border-box;
+    padding: 2em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 2;
+    --ink: #fff;
+    color: var(--ink);
+    mix-blend-mode: difference;
+  }
+  p {
+    font-family: "Unbounded", sans-serif;
+    font-weight: 400;
+    font-size: 1rem;
+  }
 
-	nav, footer {
-		position: fixed;
-		left: 0;
-		right: 0;
-		box-sizing: border-box;
-		padding: 2em;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		z-index: 2;
-	}
-	p {
-		font-family: "Unbounded", sans-serif;
-		font-weight: 400;
-		font-size: 1rem;
-		color: #0f0f0f;
-	}
+  nav {
+    top: 0;
+  }
+  footer {
+    bottom: 0;
+    /* aligne "By Clement Nicolas" sur la dernière ligne ("Modify Effects") */
+    align-items: flex-end;
+    pointer-events: none;
+  }
+  .effects-panel {
+    pointer-events: auto;
+  }
 
-	nav {
-		top: 0;
-	}
-	footer {
-		bottom: 0;
-		pointer-events: none;
-	}
+  footer:has(.noise-select[open]) {
+    --ink: #111;
+    mix-blend-mode: normal;
+  }
+  footer p {
+    margin: 0;
+  }
 
-	#carousel3d {
-		position: fixed;
-		bottom: 0;
-		left: 0;
-		width: 100vw;
-		height: 20vh;
-		overflow: hidden;
-		z-index: 1;
-		cursor: pointer;
-	}
+  #carousel3d {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    height: 20vh;
+    height: 20dvh;
+    overflow: hidden;
+    z-index: 1;
+    cursor: pointer;
+  }
 
-	nav {
-  align-items: flex-start;
-}
+  nav {
+    align-items: flex-start;
+  }
 
-.nav-experience,
-#songs-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
+  /* select custom : <details> fermé = choix actuel, ouvert = liste par-dessus */
+  .noise-select {
+    position: relative;
+  }
+  .noise-select summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+    border: 1px solid var(--ink);
+    cursor: pointer;
+  }
+  .noise-select summary::-webkit-details-marker {
+    display: none;
+  }
+  .noise-select summary img {
+    width: 24px;
+    height: 24px;
+    object-fit: cover;
+    display: block;
+  }
+  /* flèche à droite, retournée quand c'est ouvert */
+  .noise-select summary::after {
+    content: "▴";
+    margin-left: auto;
+    transition: transform 0.12s ease;
+  }
+  .noise-select[open] summary::after {
+    transform: rotate(180deg);
+  }
 
-#songs-info p {
-  margin: 0;
-  font-family: "JetBrainsMono", monospace;
-}
+  .noise-list {
+    position: absolute;
+    bottom: calc(100% + 6px); /* s'ouvre vers le haut, le panneau est en bas de l'écran */
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    padding: 4px;
+    background: #e3e3db;
+    border: 1px solid var(--ink);
+    z-index: 3;
+  }
 
-  </style>
+  .noise-list button {
+    appearance: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px;
+    background: transparent;
+    border: 1px solid var(--ink);
+    border-radius: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.12s ease;
+  }
+  .noise-list button:hover {
+    opacity: 1;
+  }
+  .noise-list button[aria-selected="true"] {
+    background: var(--ink);
+    color: #e3e3db;
+    opacity: 1;
+  }
+
+  .noise-list img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+  }
+
+  .noise-select summary:focus-visible,
+  .noise-list button:focus-visible {
+    outline: 1px dashed var(--ink);
+    outline-offset: 2px;
+  }
+
+  .nav-experience,
+  #songs-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  #songs-info p {
+    margin: 0;
+    font-family: "JetBrainsMono", monospace;
+  }
+
+  .effects-panel,
+  .effects-params {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .effects-panel:not(.is-open) .effects-params {
+    display: none;
+  }
+  /* même style que les autres p (Unbounded), cliquable */
+  .effects-toggle {
+    appearance: none;
+    align-self: flex-start;
+    padding: 0;
+    background: none;
+    border: none;
+    font-family: "Unbounded", sans-serif;
+    font-weight: 400;
+    font-size: 1rem;
+    color: inherit;
+    cursor: pointer;
+  }
+  .effects-toggle::after {
+    content: " +";
+  }
+  .effects-panel.is-open .effects-toggle::after {
+    content: " −";
+  }
+  .effects-toggle:focus-visible {
+    outline: 1px dashed var(--ink);
+    outline-offset: 3px;
+  }
+
+  .param-container {
+    font-family: "JetBrainsMono", monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 180px;
+  }
+  .param-container label {
+    cursor: pointer;
+  }
+  /* checkbox : label à gauche, case à droite sur la même ligne */
+  .param-container:has(input[type="checkbox"]) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .param-container input[type="range"],
+  .range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 14px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .param-container input[type="range"]::-webkit-slider-runnable-track,
+  .range::-webkit-slider-runnable-track {
+    height: 1px;
+    background: var(--ink);
+  }
+  .param-container input[type="range"]::-webkit-slider-thumb,
+  .range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    margin-top: -4.5px;
+    background: var(--ink);
+    border: none;
+    border-radius: 0;
+  }
+  .param-container input[type="range"]::-moz-range-track,
+  .range::-moz-range-track {
+    height: 1px;
+    background: var(--ink);
+  }
+  .param-container input[type="range"]::-moz-range-thumb,
+  .range::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    background: var(--ink);
+    border: none;
+    border-radius: 0;
+  }
+
+  .param-container input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    margin: 0;
+    border: 1px solid var(--ink);
+    background: transparent;
+    cursor: pointer;
+    display: grid;
+    place-content: center;
+  }
+  .param-container input[type="checkbox"]::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    background: var(--ink);
+    transform: scale(0);
+    transition: transform 0.12s ease;
+  }
+  .param-container input[type="checkbox"]:checked::before {
+    transform: scale(1);
+  }
+
+  .player {
+    --ink: #fff;
+    position: fixed;
+    bottom: calc(20vh + 1em); /* au-dessus du carousel */
+    bottom: calc(20dvh + 1em);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: min(420px, calc(100vw - 4em));
+    font-family: "JetBrainsMono", monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    mix-blend-mode: difference;
+  }
+  .player-button {
+    appearance: none;
+    width: 6em;
+    padding: 4px 0;
+    background: transparent;
+    border: 1px solid var(--ink);
+    border-radius: 0;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+  .player-button:hover {
+    background: var(--ink);
+    color: #000;
+  }
+  .player-slider {
+    flex: 1;
+  }
+  .player-time {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .player-button:focus-visible,
+  .param-container input:focus-visible {
+    outline: 1px dashed var(--ink);
+    outline-offset: 3px;
+  }
+
+  /* ---------- Responsive ---------- */
+
+  /* doigt : zones de clic plus grandes (le trait d'1px reste) */
+  @media (pointer: coarse) {
+    .param-container input[type="range"],
+    .range {
+      height: 28px;
+    }
+    .param-container input[type="range"]::-webkit-slider-thumb,
+    .range::-webkit-slider-thumb {
+      width: 18px;
+      height: 18px;
+      margin-top: -8.5px;
+    }
+    .param-container input[type="range"]::-moz-range-thumb,
+    .range::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+    }
+    .param-container input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+    }
+    .param-container input[type="checkbox"]::before {
+      width: 10px;
+      height: 10px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    nav,
+    footer {
+      padding: 1em;
+    }
+    p {
+      font-size: 0.85rem;
+    }
+    .nav-experience > p,
+    .credit {
+      display: none;
+    }
+    #songs-info p {
+      font-size: 0.65rem;
+    }
+
+    /* panneau remonté sous "Visual Sound" : fixed sort du flux du footer
+       (sans transform sur le footer, il se place par rapport à l'écran) */
+    .effects-panel {
+      position: fixed;
+      top: 3.5rem;
+      left: 1em;
+    }
+    /* bouton en haut, réglages qui s'ouvrent vers le bas */
+    .effects-toggle {
+      order: -1;
+      font-size: 0.85rem;
+    }
+    .param-container {
+      width: min(260px, calc(100vw - 2em));
+    }
+    /* la liste des noises s'ouvre vers le bas, sinon elle sort de l'écran */
+    .noise-list {
+      bottom: auto;
+      top: calc(100% + 6px);
+    }
+    .noise-select summary::after {
+      content: "▾";
+    }
+    /* panneau ouvert : il passe sur les infos du morceau, à droite */
+    body:has(.effects-panel.is-open) #songs-info {
+      visibility: hidden;
+    }
+
+    .player {
+      width: calc(100vw - 2em);
+      gap: 10px;
+    }
+  }
+</style>

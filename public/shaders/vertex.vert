@@ -1,7 +1,6 @@
 precision mediump float;
 
 attribute vec3 aPosition;
-attribute vec3 aNormal;
 attribute vec2 aTexCoord;
 
 
@@ -11,6 +10,13 @@ uniform mat4 uModelViewMatrix;
 uniform float uTime;
 uniform float uFrequency;
 uniform float uAmplitude;
+
+uniform float uWarpStrength;
+uniform float uOctave;
+
+uniform float uMorph;
+uniform float uRadius;
+uniform vec2 uResolution;
 
 varying vec3 vNormal;
 varying vec2 vTexCoord;
@@ -169,8 +175,9 @@ float pnoise(in vec3 P, in vec3 rep) {
 
 float fbm(vec3 p){
   float value = 0.0;
-  float amp = 0.5;
-  for(int i = 0; i < 5; i++){
+  float amp = 0.6;
+  for(int i = 0; i < 6; i++){
+    if(float(i) >= uOctave) break;
     value += amp * cnoise(p);
     p *= 2.0;
     amp *= 0.5;
@@ -179,29 +186,44 @@ float fbm(vec3 p){
 }
 
 void main() {
-    //pour le rectangle
-    //float displacement = uAmplitude * pnoise(aNormal + (uTime * 0.01), vec3(1.0));
-    //vNoise = pnoise(aNormal, vec3(0.0));
-    //vec4 newPosition = vec4(aPosition; 1.0);
-
     float t = uTime * 0.01;
-    vec3 p = aNormal * uFrequency;
 
+    float longitude = aTexCoord.x * radians(360.0) - radians(180.0);
+    float latitude = aTexCoord.y * radians(180.0);
+
+    float x = sin(latitude) * sin(longitude);
+    float y = -cos(latitude);
+    float z = sin(latitude) * cos(longitude);
+
+    vec3 sphereDir = vec3(x, y, z);
+
+    vec3 planePos = vec3(aPosition.xy * uResolution, 0.0);
+    vec3 planeNormal = vec3(0.0, 0.0, 1.0);
+
+    vec3 spherePos = sphereDir * uRadius;
+    vec3 sphereNormal = sphereDir;
+
+    vec3 morphPos = mix(planePos, spherePos, uMorph);
+    vec3 morphNormal = normalize(mix(planeNormal, sphereNormal, uMorph));
+
+    vec3 base = mix(vec3(aTexCoord * 2.0 - 1.0, 0.0), morphNormal, uMorph);
+    vec3 p = base * uFrequency;
     vec3 q = vec3(
       fbm(p + vec3(0.0, 0.0, t)),
       fbm(p + vec3(5.2, 2.3, t)),
       fbm(p + vec3(1.7, 9.2, t))
     );
 
-    float noise = fbm(p * q);
+    float noise = cnoise(p + q * uWarpStrength);
     float displacement = uAmplitude * noise;
 
+    displacement *= mix(100.0, uRadius, uMorph);
 
-    //float displacement = uAmplitude * pnoise(aNormal * 2.0 + (uTime * 0.01), vec3(7.0));
-    //vNoise = pnoise(aNormal, vec3(0.0));
-    vec4 newPosition = vec4(aPosition + displacement * aNormal, 1.0);
+    //float displacement = uAmplitude * pnoise(morphNormal * 2.0 + (uTime * 0.01), vec3(7.0));
+    //vNoise = pnoise(morphNormal, vec3(0.0));
+    vec4 newPosition = vec4(morphPos + displacement * morphNormal, 1.0);
     vNoise = noise;
-    vNormal = aNormal;
+    vNormal = morphNormal;
     vTexCoord = aTexCoord;
 
     gl_Position = uProjectionMatrix * uModelViewMatrix * newPosition;

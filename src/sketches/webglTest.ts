@@ -1,13 +1,11 @@
 import p5 from "p5";
 import { createPlayer } from "./player";
 import { DATA_SONGS } from "../constants/song";
-import { PlaneHelper } from "three";
+import { params } from "../constants/params";
+import { DATA_NOISE } from "../constants/noise";
 
 const VERTEX_SHADER = "/shaders/vertex.vert";
 const FRAGMENT_SHADER = "/shaders/fragment.frag";
-const DMAP = "/displacement/turbulence.webp";
-// 0..1 : plus bas = amplitude plus douce, plus haut = plus réactive
-const AMP_SMOOTHING = 0.09;
 
 export type SketchState = {
   song: p5.SoundFile;
@@ -19,16 +17,17 @@ export type SketchState = {
   myShaders: p5.Shader;
   image: p5.Image;
   dMap: p5.Image;
-  capture: p5.MediaElement;
   smoothAmplitude: number;
+  bassMin: number;
+  bassMax: number;
+  morph: number;
+  player: ReturnType<typeof createPlayer>;
 };
 
 export const WebGLSketch = (p: p5) => {
   const state = {} as SketchState;
 
   const selectTrack = (index: number) => {
-    let player: { setSong: (song: p5.SoundFile) => void };
-    player = createPlayer(state.song);
     const track = DATA_SONGS[index];
     const title = document.getElementById("song-title");
     const artist = document.getElementById("song-artist");
@@ -48,8 +47,17 @@ export const WebGLSketch = (p: p5) => {
     state.song = p.loadSound(track.song, (sound) => {
       state.amplitude.setInput(sound);
       state.fft.setInput(sound);
-      player.setSong(sound);
+      state.player.setSong(sound);
       if (wasPlaying) sound.play();
+    });
+  };
+
+  const selectNoise = (id: string) => {
+    const noise = DATA_NOISE.find((item) => item.id === id);
+    if (!noise) return;
+    params.noise = id;
+    state.dMap = p.loadImage(noise?.noise_image, (img) => {
+      state.myShaders.setUniform("uDmap", img);
     });
   };
 
@@ -59,18 +67,22 @@ export const WebGLSketch = (p: p5) => {
   p.setup = () => setup(p, state);
   p.draw = () => draw(p, state);
   p.keyPressed = () => keyPressed(p, state);
+  p.windowResized = () => p.resizeCanvas(p.windowWidth, p.windowHeight);
 
-  return selectTrack;
+  return { selectTrack, selectNoise };
 };
 
 function preload(p: p5, state: SketchState) {
   state.song = p.loadSound(DATA_SONGS[0].song);
   state.myShaders = p.loadShader(VERTEX_SHADER, FRAGMENT_SHADER);
   state.image = p.loadImage(DATA_SONGS[0].cover);
-  state.dMap = p.loadImage(DMAP);
+  const noise = DATA_NOISE.find((item) => item.id === params.noise);
+  state.dMap = p.loadImage(noise?.noise_image || DATA_NOISE[0].noise_image);
 }
 
 function setup(p: p5, state: SketchState) {
+  // Écrans retina ×3 : le fbm par pixel coûte trop cher, on plafonne à ×2
+  p.pixelDensity(Math.min(window.devicePixelRatio, 2));
   p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
   p.shader(state.myShaders);
 
@@ -79,22 +91,24 @@ function setup(p: p5, state: SketchState) {
   state.amplitude = new p5.Amplitude();
   state.fft = new p5.FFT();
   state.peakDetect = new p5.PeakDetect(400, 4000, 0.05);
-  //state.capture = p.createCapture(p.VIDEO) as p5.MediaElement;
-  //state.capture.hide();
 
   state.myShaders.setUniform("uTexture", state.image);
-  // state.myShaders.setUniform("uCamera", state.capture);
   state.myShaders.setUniform("uDmap", state.dMap);
-  state.myShaders.setUniform("uResolution", [p.width, p.height]);
-  state.myShaders.setUniform("uTextureResolution", [
-    state.image.width,
-    state.image.height,
-  ]);
+  state.myShaders.setUniform("uTextureResolution", [state.image.width, state.image.height]);
 
   state.amplitude.setInput(state.song);
   state.fft.setInput(state.song);
 
   state.smoothAmplitude = 0.05;
+
+  // Un seul player pour toute la page : selectTrack ne fait que lui passer le nouveau son
+  state.player = createPlayer(state.song);
+
+  if (params.sphere) {
+    state.morph = 1;
+  } else {
+    state.morph = 0;
+  }
 }
 
 function draw(p: p5, state: SketchState) {
@@ -107,29 +121,38 @@ function draw(p: p5, state: SketchState) {
   let frequency = state.fft.getCentroid();
   frequency *= 0.001;
 
-  const radius = p.width / 8;
-
-  const mapVolume = p.map(volume, 0, 1.0, 0.1, 1.2);
+  const mapVolume = p.map(volume, 0, 1.0, 0, 1.3);
   const mapFreq = p.map(frequency, 0, 5.0, 0.0, 0.8);
 
   state.myShaders.setUniform("uFrequency", mapFreq);
-  state.smoothAmplitude = p.lerp(
-    state.smoothAmplitude,
-    mapVolume,
-    AMP_SMOOTHING,
-  );
+  state.smoothAmplitude = p.lerp(state.smoothAmplitude, mapVolume, params.ampSmoothing);
+  state.morph = p.lerp(state.morph, params.sphere ? 1.0 : 0.0, 0.1);
+  state.myShaders.setUniform("uMorph", state.morph);
+  // Envoyés à chaque frame pour suivre le redimensionnement (windowResized)
+  state.myShaders.setUniform("uResolution", [p.width, p.height]);
+  // Le plus petit côté : sinon la sphère est minuscule en portrait
+  state.myShaders.setUniform("uRadius", p.min(p.width, p.height) / params.radius);
+  state.myShaders.setUniform("uOctave", params.octave);
+  state.myShaders.setUniform("uWarpStrength", params.warpStrength);
   state.myShaders.setUniform("uAmplitude", state.smoothAmplitude);
   state.myShaders.setUniform("uTime", p.frameCount);
-
   state.myShaders.setUniform("uTexture", state.image);
-  //state.myShaders.setUniform("uCamera", state.capture);
+
   state.myShaders.setUniform("uDmap", state.dMap);
-  p.rotateY(p.PI);
-  p.sphere(radius, 400, 400);
-  //p.rect(0, 0, p.width, p.height);
+
+  p.plane(1, 1, params.top, params.top);
+
+  // if (params.sphere) {
+  //   const radius = p.width / params.radius;
+  //   p.rotateY(p.PI);
+  //   p.sphere(radius, params.top, params.top);
+  // } else {
+  //   p.plane(p.width, p.height, params.top, params.top);
+  // }
 }
 
 function keyPressed(p: p5, state: SketchState) {
+  if (document.activeElement?.closest("input, button, summary")) return;
   if (p.key === " ") {
     if (state.song.isPlaying()) {
       state.song.pause();
