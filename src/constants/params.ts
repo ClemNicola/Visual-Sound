@@ -4,7 +4,7 @@ export const params = {
   sphere: true,
   ampSmoothing: 0.1,
   top: 200,
-  radius: 8,
+  radius: 5,
   noise: DATA_NOISE[0].id,
   octave: 3,
   warpStrength: 1,

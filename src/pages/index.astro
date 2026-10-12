@@ -25,7 +25,7 @@ const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DA
       type="font/ttf"
       crossorigin
     />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <title>Visual Sound</title>
   </head>
@@ -44,95 +44,104 @@ const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DA
     <div id="sketch"></div>
     <footer>
       <div class="effects-panel">
-        <div class="param-container">
-          <label for="sphere">Sphere</label>
-          <input id="sphere" data-param="sphere" type="checkbox" checked={params.sphere} />
+        <div id="effects-params" class="effects-params">
+          <div class="param-container">
+            <label for="sphere">Sphere</label>
+            <input id="sphere" data-param="sphere" type="checkbox" checked={params.sphere} />
+          </div>
+          <div class="param-container">
+            <span id="noise-label">Noise</span>
+            <details class="noise-select">
+              <summary aria-labelledby="noise-label">
+                <img src={currentNoise.noise_image} alt="" />
+                <span>{currentNoise.name}</span>
+              </summary>
+              <div class="noise-list" role="listbox" aria-labelledby="noise-label">
+                {DATA_NOISE.map((noise) => (
+                  <button
+                    type="button"
+                    role="option"
+                    data-value={noise.id}
+                    aria-selected={noise.id === params.noise}
+                  >
+                    <img src={noise.noise_image} alt="" />
+                    {noise.name}
+                  </button>
+                ))}
+              </div>
+            </details>
+          </div>
+          <div class="param-container">
+            <label for="octave">Octave</label>
+            <input
+              id="octave"
+              data-param="octave"
+              type="range"
+              min="1"
+              max="6"
+              step="0.1"
+              value={params.octave}
+            />
+          </div>
+          <div class="param-container">
+            <label for="warpStrength">Noise Strength</label>
+            <input
+              id="warpStrength"
+              data-param="warpStrength"
+              type="range"
+              min="0"
+              max="2"
+              step="0.01"
+              value={params.warpStrength}
+            />
+          </div>
+          <div class="param-container">
+            <label for="ampSmoothing">Amplitude Smoothing</label>
+            <input
+              id="ampSmoothing"
+              data-param="ampSmoothing"
+              type="range"
+              min="0.0001"
+              max="0.7"
+              step="0.001"
+              value={params.ampSmoothing}
+            />
+          </div>
+          <div class="param-container">
+            <label for="top">Top</label>
+            <input
+              id="top"
+              data-param="top"
+              type="range"
+              min="10"
+              max="400"
+              step="10"
+              value={params.top}
+            />
+          </div>
+          <div class="param-container">
+            <label for="radius">Radius</label>
+            <input
+              id="radius"
+              data-param="radius"
+              type="range"
+              min="4"
+              max="24"
+              step="1"
+              value={params.radius}
+            />
+          </div>
         </div>
-        <div class="param-container">
-          <span id="noise-label">Noise</span>
-          <details class="noise-select">
-            <summary aria-labelledby="noise-label">
-              <img src={currentNoise.noise_image} alt="" />
-              <span>{currentNoise.name}</span>
-            </summary>
-            <div class="noise-list" role="listbox" aria-labelledby="noise-label">
-              {DATA_NOISE.map((noise) => (
-                <button
-                  type="button"
-                  role="option"
-                  data-value={noise.id}
-                  aria-selected={noise.id === params.noise}
-                >
-                  <img src={noise.noise_image} alt="" />
-                  {noise.name}
-                </button>
-              ))}
-            </div>
-          </details>
-        </div>
-        <div class="param-container">
-          <label for="octave">Octave</label>
-          <input
-            id="octave"
-            data-param="octave"
-            type="range"
-            min="1"
-            max="6"
-            step="0.1"
-            value={params.octave}
-          />
-        </div>
-        <div class="param-container">
-          <label for="warpStrength">Noise Strength</label>
-          <input
-            id="warpStrength"
-            data-param="warpStrength"
-            type="range"
-            min="0"
-            max="2"
-            step="0.01"
-            value={params.warpStrength}
-          />
-        </div>
-        <div class="param-container">
-          <label for="ampSmoothing">Amplitude Smoothing</label>
-          <input
-            id="ampSmoothing"
-            data-param="ampSmoothing"
-            type="range"
-            min="0.0001"
-            max="0.7"
-            step="0.001"
-            value={params.ampSmoothing}
-          />
-        </div>
-        <div class="param-container">
-          <label for="top">Top</label>
-          <input
-            id="top"
-            data-param="top"
-            type="range"
-            min="10"
-            max="400"
-            step="10"
-            value={params.top}
-          />
-        </div>
-        <div class="param-container">
-          <label for="radius">Radius</label>
-          <input
-            id="radius"
-            data-param="radius"
-            type="range"
-            min="4"
-            max="24"
-            step="1"
-            value={params.radius}
-          />
-        </div>
-        <p>Modify Effects</p>
+        <button
+          type="button"
+          class="effects-toggle"
+          aria-expanded="true"
+          aria-controls="effects-params"
+        >
+          Modify Effects
+        </button>
       </div>
-      <p>By Clement Nicolas</p>
+      <p class="credit">By Clement Nicolas</p>
     </footer>
     <canvas id="carousel3d"></canvas>
   </body>
@@ -157,6 +166,18 @@ const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DA
       const value = input.type === "checkbox" ? input.checked : input.valueAsNumber;
       (params as Record<string, number | boolean | string>)[key] = value;
     });
+  });
+
+  // Panneau repliable : ouvert par défaut sur desktop, fermé sur mobile
+  const effectsPanel = document.querySelector<HTMLDivElement>(".effects-panel");
+  const effectsToggle = document.querySelector<HTMLButtonElement>(".effects-toggle");
+  const setEffectsOpen = (open: boolean) => {
+    effectsPanel?.classList.toggle("is-open", open);
+    effectsToggle?.setAttribute("aria-expanded", String(open));
+  };
+  setEffectsOpen(!window.matchMedia("(max-width: 768px)").matches);
+  effectsToggle?.addEventListener("click", () => {
+    setEffectsOpen(!effectsPanel?.classList.contains("is-open"));
   });
 
   const noiseSelect = document.querySelector<HTMLDetailsElement>(".noise-select");
@@ -228,6 +249,7 @@ const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DA
     display: block;
     width: 100vw;
     height: 100vh;
+    height: 100dvh; /* mobile : suit la barre d'adresse qui apparaît / disparaît */
   }
 
   nav,
@@ -241,12 +263,14 @@ const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DA
     justify-content: space-between;
     align-items: center;
     z-index: 2;
+    --ink: #fff;
+    color: var(--ink);
+    mix-blend-mode: difference;
   }
   p {
     font-family: "Unbounded", sans-serif;
     font-weight: 400;
     font-size: 1rem;
-    mix-blend-mode: difference;
   }
 
   nav {
@@ -256,7 +280,15 @@ const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DA
     bottom: 0;
     /* aligne "By Clement Nicolas" sur la dernière ligne ("Modify Effects") */
     align-items: flex-end;
+    pointer-events: none;
+  }
+  .effects-panel {
     pointer-events: auto;
+  }
+
+  footer:has(.noise-select[open]) {
+    --ink: #111;
+    mix-blend-mode: normal;
   }
   footer p {
     margin: 0;
@@ -268,6 +300,7 @@ const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DA
     left: 0;
     width: 100vw;
     height: 20vh;
+    height: 20dvh;
     overflow: hidden;
     z-index: 1;
     cursor: pointer;
@@ -374,11 +407,37 @@ const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DA
     font-family: "JetBrainsMono", monospace;
   }
 
-  .effects-panel {
-    --ink: #111;
+  .effects-panel,
+  .effects-params {
     display: flex;
     flex-direction: column;
     gap: 14px;
+  }
+  .effects-panel:not(.is-open) .effects-params {
+    display: none;
+  }
+  /* même style que les autres p (Unbounded), cliquable */
+  .effects-toggle {
+    appearance: none;
+    align-self: flex-start;
+    padding: 0;
+    background: none;
+    border: none;
+    font-family: "Unbounded", sans-serif;
+    font-weight: 400;
+    font-size: 1rem;
+    color: inherit;
+    cursor: pointer;
+  }
+  .effects-toggle::after {
+    content: " +";
+  }
+  .effects-panel.is-open .effects-toggle::after {
+    content: " −";
+  }
+  .effects-toggle:focus-visible {
+    outline: 1px dashed var(--ink);
+    outline-offset: 3px;
   }
 
   .param-container {
@@ -402,7 +461,8 @@ const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DA
     align-items: center;
   }
 
-  .param-container input[type="range"] {
+  .param-container input[type="range"],
+  .range {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
@@ -411,11 +471,13 @@ const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DA
     background: transparent;
     cursor: pointer;
   }
-  .param-container input[type="range"]::-webkit-slider-runnable-track {
+  .param-container input[type="range"]::-webkit-slider-runnable-track,
+  .range::-webkit-slider-runnable-track {
     height: 1px;
     background: var(--ink);
   }
-  .param-container input[type="range"]::-webkit-slider-thumb {
+  .param-container input[type="range"]::-webkit-slider-thumb,
+  .range::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 10px;
     height: 10px;
@@ -424,11 +486,13 @@ const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DA
     border: none;
     border-radius: 0;
   }
-  .param-container input[type="range"]::-moz-range-track {
+  .param-container input[type="range"]::-moz-range-track,
+  .range::-moz-range-track {
     height: 1px;
     background: var(--ink);
   }
-  .param-container input[type="range"]::-moz-range-thumb {
+  .param-container input[type="range"]::-moz-range-thumb,
+  .range::-moz-range-thumb {
     width: 10px;
     height: 10px;
     background: var(--ink);
@@ -460,8 +524,132 @@ const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DA
     transform: scale(1);
   }
 
+  .player {
+    --ink: #fff;
+    position: fixed;
+    bottom: calc(20vh + 1em); /* au-dessus du carousel */
+    bottom: calc(20dvh + 1em);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: min(420px, calc(100vw - 4em));
+    font-family: "JetBrainsMono", monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    mix-blend-mode: difference;
+  }
+  .player-button {
+    appearance: none;
+    width: 6em;
+    padding: 4px 0;
+    background: transparent;
+    border: 1px solid var(--ink);
+    border-radius: 0;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+  .player-button:hover {
+    background: var(--ink);
+    color: #000;
+  }
+  .player-slider {
+    flex: 1;
+  }
+  .player-time {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .player-button:focus-visible,
   .param-container input:focus-visible {
     outline: 1px dashed var(--ink);
     outline-offset: 3px;
+  }
+
+  /* ---------- Responsive ---------- */
+
+  /* doigt : zones de clic plus grandes (le trait d'1px reste) */
+  @media (pointer: coarse) {
+    .param-container input[type="range"],
+    .range {
+      height: 28px;
+    }
+    .param-container input[type="range"]::-webkit-slider-thumb,
+    .range::-webkit-slider-thumb {
+      width: 18px;
+      height: 18px;
+      margin-top: -8.5px;
+    }
+    .param-container input[type="range"]::-moz-range-thumb,
+    .range::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+    }
+    .param-container input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+    }
+    .param-container input[type="checkbox"]::before {
+      width: 10px;
+      height: 10px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    nav,
+    footer {
+      padding: 1em;
+    }
+    p {
+      font-size: 0.85rem;
+    }
+    .nav-experience > p,
+    .credit {
+      display: none;
+    }
+    #songs-info p {
+      font-size: 0.65rem;
+    }
+
+    /* panneau remonté sous "Visual Sound" : fixed sort du flux du footer
+       (sans transform sur le footer, il se place par rapport à l'écran) */
+    .effects-panel {
+      position: fixed;
+      top: 3.5rem;
+      left: 1em;
+    }
+    /* bouton en haut, réglages qui s'ouvrent vers le bas */
+    .effects-toggle {
+      order: -1;
+      font-size: 0.85rem;
+    }
+    .param-container {
+      width: min(260px, calc(100vw - 2em));
+    }
+    /* la liste des noises s'ouvre vers le bas, sinon elle sort de l'écran */
+    .noise-list {
+      bottom: auto;
+      top: calc(100% + 6px);
+    }
+    .noise-select summary::after {
+      content: "▾";
+    }
+    /* panneau ouvert : il passe sur les infos du morceau, à droite */
+    body:has(.effects-panel.is-open) #songs-info {
+      visibility: hidden;
+    }
+
+    .player {
+      width: calc(100vw - 2em);
+      gap: 10px;
+    }
   }
 </style>

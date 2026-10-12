@@ -14,32 +14,30 @@ export function createPlayer(initialSong: p5.SoundFile) {
   };
 
   const container = document.createElement("div");
-  container.style.cssText =
-    "position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:8px 14px;background:rgba(0,0,0,.6);color:#fff;font:12px monospace;border-radius:8px;z-index:10;";
+  container.className = "player";
 
   const button = document.createElement("button");
-  button.style.cssText =
-    "width:28px;background:none;border:1px solid #fff;color:#fff;border-radius:4px;cursor:pointer;";
+  button.type = "button";
+  button.className = "player-button";
 
   const slider = document.createElement("input");
   slider.type = "range";
+  slider.className = "range player-slider";
   slider.min = "0";
   slider.max = String(song.duration());
   slider.step = "0.1";
-  slider.style.width = "300px";
+  slider.setAttribute("aria-label", "Position");
 
   const time = document.createElement("span");
+  time.className = "player-time";
 
   container.append(button, slider, time);
   document.body.append(container);
 
-  // Empêche les clics sur le lecteur de déclencher le mousePressed du sketch
-  container.addEventListener("mousedown", (e) => e.stopPropagation());
-
   let dragging = false;
 
   const render = (current = song.currentTime()) => {
-    button.textContent = song.isPlaying() ? "❚❚" : "▶";
+    button.textContent = song.isPlaying() ? "Pause" : "Play";
     if (!dragging) slider.value = String(current);
     time.textContent = `${formatTime(current)} / ${formatTime(song.duration())}`;
   };
@@ -64,7 +62,6 @@ export function createPlayer(initialSong: p5.SoundFile) {
     if (song.isPlaying()) {
       song.jump(t, 0);
     } else {
-      // jump() ne fait rien en pause : on déplace la position de reprise de play()
       const s = song as unknown as { _paused: boolean; pauseTime: number };
       s._paused = true;
       s.pauseTime = t;

@@ -3,8 +3,8 @@ import { DATA_SONGS } from "../constants/song";
 
 export const Carousel3D = (selectTrack: (index: number) => void) => {
   const canvas = document.getElementById("carousel3d") as HTMLCanvasElement;
-  const width = canvas.clientWidth;
-  const height = canvas.clientHeight;
+  let width = canvas.clientWidth;
+  let height = canvas.clientHeight;
   const render = new THREE.WebGLRenderer({
     canvas,
     alpha: true,
@@ -12,7 +12,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     preserveDrawingBuffer: true,
   });
 
-  render.setSize(width, height);
+  render.setSize(width, height, false);
   render.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   const scene = new THREE.Scene();
@@ -141,7 +141,11 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     mesh.geometry.computeVertexNormals();
   };
 
+  const isFromUi = (target: EventTarget | null) =>
+    target instanceof Element && target.closest("nav, footer, .player") !== null;
+
   window.addEventListener("keydown", (e) => {
+    if (isFromUi(e.target)) return;
     if (e.key === "ArrowLeft") {
       targetPosition += slideUnit;
       targetDistortionFactor = Math.min(1.0, targetDistortionFactor + 0.3);
@@ -154,6 +158,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
   window.addEventListener(
     "wheel",
     (e) => {
+      if (isFromUi(e.target)) return;
       e.preventDefault();
       const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
       const wheelStrength = Math.abs(delta) * 0.001;
@@ -177,6 +182,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
   window.addEventListener(
     "touchstart",
     (e) => {
+      if (isFromUi(e.target)) return;
       touchStartX = e.touches[0].clientX;
       touchLastX = touchStartX;
       isScrolling = false;
@@ -187,6 +193,7 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
   window.addEventListener(
     "touchmove",
     (e) => {
+      if (isFromUi(e.target)) return;
       e.preventDefault();
       const touchX = e.touches[0].clientX;
       const deltaX = touchX - touchLastX;
@@ -200,7 +207,8 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
     { passive: false },
   );
 
-  window.addEventListener("touchend", () => {
+  window.addEventListener("touchend", (e) => {
+    if (isFromUi(e.target)) return;
     const velocity = (touchLastX - touchStartX) * 0.005;
     if (Math.abs(velocity) > 0.5) {
       autoScrollSpeed = velocity * settings.momentumMultiplier * 0.05;
@@ -217,9 +225,12 @@ export const Carousel3D = (selectTrack: (index: number) => void) => {
   });
 
   window.addEventListener("resize", () => {
+    // Relire la taille : le canvas suit le CSS (100vw × 20dvh)
+    width = canvas.clientWidth;
+    height = canvas.clientHeight;
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    render.setSize(width, height);
+    render.setSize(width, height, false);
   });
 
   const raycaster = new THREE.Raycaster();

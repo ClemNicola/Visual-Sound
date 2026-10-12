@@ -21,13 +21,13 @@ export type SketchState = {
   bassMin: number;
   bassMax: number;
   morph: number;
+  player: ReturnType<typeof createPlayer>;
 };
 
 export const WebGLSketch = (p: p5) => {
   const state = {} as SketchState;
 
   const selectTrack = (index: number) => {
-    const player: { setSong: (song: p5.SoundFile) => void } = createPlayer(state.song);
     const track = DATA_SONGS[index];
     const title = document.getElementById("song-title");
     const artist = document.getElementById("song-artist");
@@ -47,7 +47,7 @@ export const WebGLSketch = (p: p5) => {
     state.song = p.loadSound(track.song, (sound) => {
       state.amplitude.setInput(sound);
       state.fft.setInput(sound);
-      player.setSong(sound);
+      state.player.setSong(sound);
       if (wasPlaying) sound.play();
     });
   };
@@ -67,6 +67,7 @@ export const WebGLSketch = (p: p5) => {
   p.setup = () => setup(p, state);
   p.draw = () => draw(p, state);
   p.keyPressed = () => keyPressed(p, state);
+  p.windowResized = () => p.resizeCanvas(p.windowWidth, p.windowHeight);
 
   return { selectTrack, selectNoise };
 };
@@ -80,6 +81,8 @@ function preload(p: p5, state: SketchState) {
 }
 
 function setup(p: p5, state: SketchState) {
+  // Écrans retina ×3 : le fbm par pixel coûte trop cher, on plafonne à ×2
+  p.pixelDensity(Math.min(window.devicePixelRatio, 2));
   p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
   p.shader(state.myShaders);
 
@@ -91,13 +94,15 @@ function setup(p: p5, state: SketchState) {
 
   state.myShaders.setUniform("uTexture", state.image);
   state.myShaders.setUniform("uDmap", state.dMap);
-  state.myShaders.setUniform("uResolution", [p.width, p.height]);
   state.myShaders.setUniform("uTextureResolution", [state.image.width, state.image.height]);
 
   state.amplitude.setInput(state.song);
   state.fft.setInput(state.song);
 
   state.smoothAmplitude = 0.05;
+
+  // Un seul player pour toute la page : selectTrack ne fait que lui passer le nouveau son
+  state.player = createPlayer(state.song);
 
   if (params.sphere) {
     state.morph = 1;
@@ -123,7 +128,10 @@ function draw(p: p5, state: SketchState) {
   state.smoothAmplitude = p.lerp(state.smoothAmplitude, mapVolume, params.ampSmoothing);
   state.morph = p.lerp(state.morph, params.sphere ? 1.0 : 0.0, 0.1);
   state.myShaders.setUniform("uMorph", state.morph);
-  state.myShaders.setUniform("uRadius", p.width / params.radius);
+  // Envoyés à chaque frame pour suivre le redimensionnement (windowResized)
+  state.myShaders.setUniform("uResolution", [p.width, p.height]);
+  // Le plus petit côté : sinon la sphère est minuscule en portrait
+  state.myShaders.setUniform("uRadius", p.min(p.width, p.height) / params.radius);
   state.myShaders.setUniform("uOctave", params.octave);
   state.myShaders.setUniform("uWarpStrength", params.warpStrength);
   state.myShaders.setUniform("uAmplitude", state.smoothAmplitude);
@@ -144,6 +152,7 @@ function draw(p: p5, state: SketchState) {
 }
 
 function keyPressed(p: p5, state: SketchState) {
+  if (document.activeElement?.closest("input, button, summary")) return;
   if (p.key === " ") {
     if (state.song.isPlaying()) {
       state.song.pause();
