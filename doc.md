@@ -10,6 +10,8 @@ input (DOM) ──écrit──▶ params ──lu à chaque frame──▶ draw(
 
 Règle d'or : toujours lire `params.xxx` **dans `draw()`**, jamais le copier dans une constante (un nombre est copié par valeur, le lien est perdu).
 
+Outillage (2026-10-08) : Prettier + ESLint installés, format au save dans VS Code. Scripts `bun run lint` / `lint:fix` / `format` / `format:check`.
+
 ---
 
 ## ✅ 1. Objet `params` partagé + `ampSmoothing`
@@ -21,51 +23,57 @@ Règle d'or : toujours lire `params.xxx` **dans `draw()`**, jamais le copier dan
 
 - [x] Une boucle sur `[data-param]` qui écoute l'événement `input`
 - [x] Checkbox → `input.checked`, range → `input.valueAsNumber`
-- [ ] Afficher la valeur à côté du slider (`<output>`)
+- ~~Afficher la valeur à côté du slider (`<output>`)~~ (pas nécessaire)
 - [x] Tester avec `ampSmoothing` seul avant d'ajouter le reste
 
 Pièges (reportés à la refonte de l'UI) :
-- `footer { pointer-events: none }` → remettre `pointer-events: auto` sur le panneau
+- ~~`footer { pointer-events: none }` → remettre `pointer-events: auto` sur le panneau~~ ✅ (`footer { pointer-events: auto }`)
 - Barre espace : si une checkbox a le focus, elle se coche **et** `keyPressed` fait play/pause → regarder `document.activeElement`
 - Le carousel (`#carousel3d`, `z-index: 1`, 20vh en bas) peut chevaucher le panneau
 
-## 3. Plages de `p.map`
+## ✅ 3 / 4 / 5. Réglage du blob (remplace plages `p.map`, bandes de fréquence, toggle typo)
 
-- [ ] `ampMin`, `ampMax`, `freqMin`, `freqMax` dans `params`
-- [ ] Remplacer les nombres en dur dans `p.map(volume, …)` et `p.map(frequency, …)`
-- [ ] Décider quoi faire si `min > max` (bloquer, ou garder : ça inverse la réaction au son)
+Décision (2026-10-12) : plutôt que des ranges `ampMin/ampMax`, des bandes `uBass`/`uMid` ou un toggle de blend mode, on a travaillé directement la forme « blob » du vertex shader. Résultat jugé satisfaisant, les anciennes étapes 3, 4 et 5 ne sont plus à faire.
 
-## 4. Bandes de fréquence (bass, mid…)
+Diagnostic de départ : la sphère ne bougeait presque pas, alors que l'image réagissait. Raisons : `fbm(p * q)` restait collé à l'origine (Perlin = 0 aux points entiers), et `p.sphere` est une sphère unité mise à l'échelle par la matrice (un déplacement de 0.03 = 3 % du rayon).
 
-- [ ] `state.fft.getEnergy("bass" | "lowMid" | "mid" | "highMid" | "treble")` → valeur 0..255, à appeler **après** `fft.analyze()`
-- [ ] Normaliser (`/ 255`) × un gain venant d'un range (`params.bassGain`, …)
-- [ ] Envoyer en uniforms (`uBass`, `uMid`…) et choisir ce que chaque bande pilote (déplacement, vitesse, distortion…)
+- [x] `fbm` : nombre d'octaves réglable via `uOctave` (boucle à borne fixe `i < 6` + `break`, car WebGL1 refuse une borne non constante) → `params.octave` + range `step="0.1"`
+- [x] Domain warp additif : `cnoise(p + q * uWarpStrength)` au lieu de `fbm(p * q)` → `params.warpStrength` + range « Noise Strength »
+- [x] `p.map(volume, 0, 1.0, 0, 1.3)` : minimum à **0** au lieu de 0.1 → plus de « spasmes » en silence (c'était ça, pas le `p + q`)
+- [x] Le gonflement uniforme (`uDisplacement` radial) a été écarté : l'effet recherché vient de la force du bruit, pas d'une inflation
+- [x] Typo : `mix-blend-mode: difference` sur les `p` (pas de toggle)
 
-## 5. Typo en `mix-blend-mode` (actif par défaut)
+Pistes laissées de côté (si besoin un jour) :
+- Lissage asymétrique attaque / relâchement à la place du `lerp` unique (`ampSmoothing`)
+- `uFrequency` (centroïde) multiplie encore `p` → la taille des lobes bouge avec le son ; la fixer si on veut un contrôle total
+- `bassMin` / `bassMax` + `console.log("bass", …)` dans `draw()` : debug à retirer (jamais initialisés → `NaN`)
 
-- [ ] Mettre `mix-blend-mode: difference` sur `nav` / `footer`, **pas** sur les `p` (fixed + z-index = contexte d'empilement)
-- [ ] Texte en blanc
-- [ ] Checkbox qui toggle une classe sur `body` pour l'activer/désactiver
+## ⬜ Police
 
-## 6. Sphère ⇄ rect
+- [ ] Trouver une autre police (actuellement `Unbounded` pour les `p`, `JetBrainsMono` pour le panneau, en `@font-face` dans `index.astro`)
 
-- [ ] Checkbox `sphere` → `p.sphere(...)` ou `p.rect(0, 0, p.width, p.height)` dans `draw()`
-- [ ] Uniform `uIsRect` pour changer le calcul des UV (le code du `ratio` est déjà commenté dans `fragment.frag`)
-- [ ] Vérifier le vertex shader : le déplacement le long de `aNormal` ne rend pas pareil sur un plan
+## ✅ 6. Sphère ⇄ rect
+
+- [x] Checkbox `sphere` → `p.sphere(...)` ou `p.plane(p.width, p.height, top, top)` dans `draw()`
+- [x] Uniform `uIsRect` pour changer le calcul des UV (`uvCover` mixé avec `vTexCoord` dans `fragment.frag`)
+- [x] Vertex shader : entrée du bruit et amplification du déplacement mixées avec `uIsRect`
 
 ## ~~7. Caméra~~ — abandonnée (2026-10-06)
 
 Essai non concluant (caméra projetée depuis l'écran via `gl_FragCoord`, mélangée à la pochette) → code retiré (input, `params.camera`, capture, uniforms, shader). Jamais commité : la démarche (je veux / j'ai dans `draw()`, `getTracks().stop()`, `coverUv`) reste décrite dans la conversation du 2026-10-06.
 
-## 8. Sélecteur de noise
+## ✅ 8. Sélecteur de noise
 
-- [ ] `<select>` → `params.noiseType` (lire avec `Number(select.value)`, pas de `valueAsNumber`)
-- [ ] `uniform float uNoiseType;` dans `vertex.vert`
-- [ ] Brancher : fbm (domain warp actuel) / `cnoise` / `pnoise` — comparer avec `< 0.5`, `< 1.5` plutôt qu'avec des `int`
+Approche retenue : chaque noise est une **image** (displacement map) chargée dans la texture `uDmap` du fragment shader, plutôt qu'un `uNoiseType` qui brancherait des fonctions de bruit dans le vertex shader.
+
+- [x] Données : `DATA_NOISE` dans `src/constants/noise.ts` (`id`, `name`, `noise_image` dans `public/displacement/`)
+- [x] `params.noise` = id du noise (`DATA_NOISE[0].id` par défaut), image chargée au `setup`
+- [x] UI : select custom en `<details>` / `<summary>` (summary = choix actuel avec miniature, liste en grille 2×2 qui s'ouvre vers le haut, choix en `aria-selected`)
+- [x] JS : `click` sur `.noise-list button` → `selectNoise(id)` (exposé par `WebGLSketch`, comme `selectTrack`) → `p.loadImage` → `setUniform("uDmap", img)`. Mise à jour de `aria-selected` et du summary, fermeture (aussi au clic en dehors)
 
 ---
 
-## 9. (Bonus, tout à la fin) Transition animée plane ⇄ sphère
+## ⬜ 9. Prochaine étape : transition animée plane ⇄ sphère (morph)
 
 ⚠️ Faire glisser `uIsRect` ne suffit pas : ça ne change que les UV/le bruit, pas la forme. Il faut **un seul maillage** qui devient l'un ou l'autre.
 

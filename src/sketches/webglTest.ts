@@ -1,11 +1,11 @@
 import p5 from "p5";
 import { createPlayer } from "./player";
 import { DATA_SONGS } from "../constants/song";
-import { params, type Params } from "../constants/params";
+import { params } from "../constants/params";
+import { DATA_NOISE } from "../constants/noise";
 
 const VERTEX_SHADER = "/shaders/vertex.vert";
 const FRAGMENT_SHADER = "/shaders/fragment.frag";
-const DMAP = "/displacement/turbulence.webp";
 
 export type SketchState = {
   song: p5.SoundFile;
@@ -18,14 +18,15 @@ export type SketchState = {
   image: p5.Image;
   dMap: p5.Image;
   smoothAmplitude: number;
+  bassMin: number;
+  bassMax: number;
 };
 
 export const WebGLSketch = (p: p5) => {
   const state = {} as SketchState;
 
   const selectTrack = (index: number) => {
-    let player: { setSong: (song: p5.SoundFile) => void };
-    player = createPlayer(state.song);
+    const player: { setSong: (song: p5.SoundFile) => void } = createPlayer(state.song);
     const track = DATA_SONGS[index];
     const title = document.getElementById("song-title");
     const artist = document.getElementById("song-artist");
@@ -50,6 +51,15 @@ export const WebGLSketch = (p: p5) => {
     });
   };
 
+  const selectNoise = (id: string) => {
+    const noise = DATA_NOISE.find((item) => item.id === id);
+    if (!noise) return;
+    params.noise = id;
+    state.dMap = p.loadImage(noise?.noise_image, (img) => {
+      state.myShaders.setUniform("uDmap", img);
+    });
+  };
+
   p.preload = () => {
     preload(p, state);
   };
@@ -57,14 +67,15 @@ export const WebGLSketch = (p: p5) => {
   p.draw = () => draw(p, state);
   p.keyPressed = () => keyPressed(p, state);
 
-  return selectTrack;
+  return { selectTrack, selectNoise };
 };
 
 function preload(p: p5, state: SketchState) {
   state.song = p.loadSound(DATA_SONGS[0].song);
   state.myShaders = p.loadShader(VERTEX_SHADER, FRAGMENT_SHADER);
   state.image = p.loadImage(DATA_SONGS[0].cover);
-  state.dMap = p.loadImage(DMAP);
+  const noise = DATA_NOISE.find((item) => item.id === params.noise);
+  state.dMap = p.loadImage(noise?.noise_image || DATA_NOISE[0].noise_image);
 }
 
 function setup(p: p5, state: SketchState) {
@@ -80,10 +91,7 @@ function setup(p: p5, state: SketchState) {
   state.myShaders.setUniform("uTexture", state.image);
   state.myShaders.setUniform("uDmap", state.dMap);
   state.myShaders.setUniform("uResolution", [p.width, p.height]);
-  state.myShaders.setUniform("uTextureResolution", [
-    state.image.width,
-    state.image.height,
-  ]);
+  state.myShaders.setUniform("uTextureResolution", [state.image.width, state.image.height]);
 
   state.amplitude.setInput(state.song);
   state.fft.setInput(state.song);
@@ -101,20 +109,17 @@ function draw(p: p5, state: SketchState) {
   let frequency = state.fft.getCentroid();
   frequency *= 0.001;
 
-  const mapVolume = p.map(volume, 0, 1.0, 0.1, 1.2);
+  const mapVolume = p.map(volume, 0, 1.0, 0, 1.3);
   const mapFreq = p.map(frequency, 0, 5.0, 0.0, 0.8);
 
   state.myShaders.setUniform("uIsRect", params.sphere ? 0.0 : 1.0);
 
   state.myShaders.setUniform("uFrequency", mapFreq);
-  state.smoothAmplitude = p.lerp(
-    state.smoothAmplitude,
-    mapVolume,
-    params.ampSmoothing,
-  );
+  state.smoothAmplitude = p.lerp(state.smoothAmplitude, mapVolume, params.ampSmoothing);
+  state.myShaders.setUniform("uOctave", params.octave);
+  state.myShaders.setUniform("uWarpStrength", params.warpStrength);
   state.myShaders.setUniform("uAmplitude", state.smoothAmplitude);
   state.myShaders.setUniform("uTime", p.frameCount);
-
   state.myShaders.setUniform("uTexture", state.image);
 
   state.myShaders.setUniform("uDmap", state.dMap);

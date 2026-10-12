@@ -13,6 +13,9 @@ uniform float uFrequency;
 uniform float uAmplitude;
 uniform float uIsRect;
 
+uniform float uWarpStrength;
+uniform float uOctave;
+
 varying vec3 vNormal;
 varying vec2 vTexCoord;
 varying float vNoise;
@@ -170,8 +173,9 @@ float pnoise(in vec3 P, in vec3 rep) {
 
 float fbm(vec3 p){
   float value = 0.0;
-  float amp = 0.5;
-  for(int i = 0; i < 5; i++){
+  float amp = 0.6;
+  for(int i = 0; i < 6; i++){
+    if(float(i) >= uOctave) break;
     value += amp * cnoise(p);
     p *= 2.0;
     amp *= 0.5;
@@ -183,14 +187,13 @@ void main() {
     float t = uTime * 0.01;
     vec3 base = mix(aNormal, vec3(aTexCoord * 2.0 - 1.0, 0.0), uIsRect);
     vec3 p = base * uFrequency;
-
     vec3 q = vec3(
       fbm(p + vec3(0.0, 0.0, t)),
       fbm(p + vec3(5.2, 2.3, t)),
       fbm(p + vec3(1.7, 9.2, t))
     );
 
-    float noise = fbm(p * q);
+    float noise = cnoise(p + q * uWarpStrength);
     float displacement = uAmplitude * noise;
 
     displacement *= mix(1.0, 100.0, uIsRect);
