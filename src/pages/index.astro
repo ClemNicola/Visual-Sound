@@ -4,13 +4,15 @@ import { DATA_NOISE } from "../constants/noise";
 import { params } from "../constants/params";
 
 const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DATA_NOISE[0];
+const ogImage = new URL("/visual_sound.png", Astro.site);
+const description =
+  "Audio-reactive WebGL visualizer: pick a track, tweak the effects and watch the sound come alive.";
 ---
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" href="/favicon.ico" />
     <link
       rel="preload"
       href="/fonts/JetBrainsMono-VariableFont_wght.ttf"
@@ -28,6 +30,20 @@ const currentNoise = DATA_NOISE.find((noise) => noise.id === params.noise) ?? DA
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <title>Visual Sound</title>
+    <meta name="description" content={description} />
+
+    <!-- Open Graph (LinkedIn, Facebook, WhatsApp…) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={Astro.site} />
+    <meta property="og:title" content="Visual Sound" />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+
+    <!-- X / Twitter -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Visual Sound" />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
   </head>
   <body>
     <nav>
