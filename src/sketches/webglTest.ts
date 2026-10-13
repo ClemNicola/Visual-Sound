@@ -135,9 +135,12 @@ function setup(p: p5, state: SketchState) {
 }
 
 function draw(p: p5, state: SketchState) {
-  // p.background(0);
-  state.bgColor = p.color(255, 255, 255, 1);
-  p.background(state.bgColor);
+  if (params.isColorBg) {
+    p.background(15);
+  } else {
+    p.background(255, 255, 255, 1);
+  }
+
   p.noStroke();
   state.fft.analyze();
   const volume = state.amplitude.getLevel();

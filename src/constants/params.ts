@@ -8,6 +8,7 @@ export const params = {
   noise: DATA_NOISE[0].id,
   octave: 3,
   warpStrength: 1,
+  isColorBg: false,
 };
 
 export type Params = typeof params;
