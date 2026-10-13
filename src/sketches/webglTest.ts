@@ -7,6 +7,13 @@ import { DATA_NOISE } from "../constants/noise";
 const VERTEX_SHADER = "/shaders/vertex.vert";
 const FRAGMENT_SHADER = "/shaders/fragment.frag";
 
+const GRID_THRESHOLD = 0.4;
+const PEAK_DECAY = 0.995;
+const MIN_PEAK = 0.15;
+// Lissage par case : s'allume vite (attaque), s'éteint lentement (relâche)
+const GRID_ATTACK = 0.5;
+const GRID_RELEASE = 0.08;
+
 export type SketchState = {
   song: p5.SoundFile;
   amplitude: p5.Amplitude;
@@ -22,6 +29,10 @@ export type SketchState = {
   bassMax: number;
   morph: number;
   player: ReturnType<typeof createPlayer>;
+  bands: [number, number][];
+  orderedBands: number[];
+  peaks: number[];
+  cellLevels: number[];
 };
 
 export const WebGLSketch = (p: p5) => {
@@ -115,6 +126,34 @@ function setup(p: p5, state: SketchState) {
   state.fft = new p5.FFT();
   state.peakDetect = new p5.PeakDetect(400, 4000, 0.05);
 
+  state.bands = [
+    [20, 300],
+    [300, 600],
+    [600, 900],
+    [900, 1200],
+    [1200, 1600],
+    [1600, 2000],
+    [2000, 2600],
+    [2600, 3400],
+    [3400, 4200],
+    [4200, 5200],
+    [5200, 6400],
+    [6400, 7600],
+    [7600, 8800],
+    [8800, 10000],
+    [10000, 11000],
+    [11000, 12000],
+  ];
+
+  state.orderedBands = state.bands.map((_, i) => i);
+  state.peaks = state.bands.map(() => MIN_PEAK);
+  state.cellLevels = state.bands.map(() => 0);
+
+  for (let i = state.bands.length - 1; i >= 0; i--) {
+    const j = Math.floor(p.random(i + 1));
+    [state.orderedBands[i], state.orderedBands[j]] = [state.orderedBands[j], state.orderedBands[i]];
+  }
+
   state.myShaders.setUniform("uTexture", state.image);
   state.myShaders.setUniform("uDmap", state.dMap);
   state.myShaders.setUniform("uTextureResolution", [state.image.width, state.image.height]);
@@ -124,7 +163,6 @@ function setup(p: p5, state: SketchState) {
 
   state.smoothAmplitude = 0.05;
 
-  // Un seul player pour toute la page : selectTrack ne fait que lui passer le nouveau son
   state.player = createPlayer(state.song);
 
   if (params.sphere) {
@@ -135,14 +173,19 @@ function setup(p: p5, state: SketchState) {
 }
 
 function draw(p: p5, state: SketchState) {
+  state.fft.analyze();
+
   if (params.isColorBg) {
+    p.resetShader();
     p.background(15);
+    drawGrid(p, state);
   } else {
     p.background(255, 255, 255, 1);
   }
 
+  p.shader(state.myShaders);
+
   p.noStroke();
-  state.fft.analyze();
   const volume = state.amplitude.getLevel();
   let frequency = state.fft.getCentroid();
   frequency *= 0.001;
@@ -186,4 +229,55 @@ function keyPressed(p: p5, state: SketchState) {
       state.song.play();
     }
   }
+}
+
+function drawGrid(p: p5, state: SketchState) {
+  const values = state.bands.map(([low, high], n) => {
+    const value = state.fft.getEnergy(low, high) / 255;
+    // Chaque bande est comparée à son propre pic récent : les aigus s'allument autant que les basses
+    state.peaks[n] = Math.max(value, state.peaks[n] * PEAK_DECAY, MIN_PEAK);
+    const normalized = value / state.peaks[n];
+    // Seuil + courbe : le calme reste noir, seuls les pics deviennent blancs
+    return p.constrain(p.map(normalized, GRID_THRESHOLD, 1, 0, 1), 0, 1) ** 2;
+  });
+
+  p.push();
+  p.translate(-p.width / 2, -p.height / 2);
+
+  const cols = 3;
+  const rows = 3;
+  const gap = 0;
+  const cellWidth = p.width / cols;
+  const cellHeight = p.height / rows;
+
+  if (p.frameCount % 15 === 0) {
+    for (let n = state.orderedBands.length - 1; n > 0; n--) {
+      const k = Math.floor(p.random(n + 1));
+      [state.orderedBands[n], state.orderedBands[k]] = [
+        state.orderedBands[k],
+        state.orderedBands[n],
+      ];
+    }
+  }
+
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      const x = i * cellWidth + cellWidth / 2;
+      const y = j * cellHeight + cellHeight / 2;
+
+      const index = state.orderedBands[i * rows + j];
+      const cell = i * rows + j;
+
+      const target = values[index];
+      const amount = target > state.cellLevels[cell] ? GRID_ATTACK : GRID_RELEASE;
+
+      state.cellLevels[cell] = p.lerp(state.cellLevels[cell], target, amount);
+      const intensity = state.cellLevels[cell];
+      p.fill(255, 0, 0, intensity * 255);
+      // p.fill(p.random(255), p.random(255), p.random(255), intensity * 255);
+      p.rect(x, y, cellWidth - gap, cellHeight - gap);
+    }
+  }
+
+  p.pop();
 }
