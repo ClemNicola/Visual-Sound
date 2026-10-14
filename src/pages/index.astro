@@ -301,6 +301,9 @@ const description =
   nav {
     top: 0;
   }
+  nav p {
+    margin: 0;
+  }
   footer {
     bottom: 0;
     /* aligne "By Clement Nicolas" sur la dernière ligne ("Modify Effects") */
@@ -605,26 +608,26 @@ const description =
   @media (pointer: coarse) {
     .param-container input[type="range"],
     .range {
-      height: 28px;
+      height: 20px;
     }
     .param-container input[type="range"]::-webkit-slider-thumb,
     .range::-webkit-slider-thumb {
-      width: 18px;
-      height: 18px;
-      margin-top: -8.5px;
+      width: 14px;
+      height: 14px;
+      margin-top: -6.5px;
     }
     .param-container input[type="range"]::-moz-range-thumb,
     .range::-moz-range-thumb {
-      width: 18px;
-      height: 18px;
+      width: 14px;
+      height: 14px;
     }
     .param-container input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
+      width: 16px;
+      height: 16px;
     }
     .param-container input[type="checkbox"]::before {
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
     }
   }
 
@@ -648,8 +651,12 @@ const description =
        (sans transform sur le footer, il se place par rapport à l'écran) */
     .effects-panel {
       position: fixed;
-      top: 3.5rem;
+      top: 2.75rem;
       left: 1em;
+    }
+    .effects-panel,
+    .effects-params {
+      gap: 10px;
     }
     /* bouton en haut, réglages qui s'ouvrent vers le bas */
     .effects-toggle {
@@ -657,7 +664,9 @@ const description =
       font-size: 0.85rem;
     }
     .param-container {
-      width: min(260px, calc(100vw - 2em));
+      width: min(200px, 60vw);
+      font-size: 0.6rem;
+      gap: 4px;
     }
     /* la liste des noises s'ouvre vers le bas, sinon elle sort de l'écran */
     .noise-list {
