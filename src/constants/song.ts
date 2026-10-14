@@ -1,5 +1,5 @@
 const Y2K = "/music/y2k.mp3";
-const ROCK_BODY = "/music/rock_body.mp3";
+const SHALLOW = "/music/keith_carnal_shallow.mp3";
 const AMORE = "/music/amore.mp3";
 const GEM_LINGO = "/music/gem_lingo.mp3";
 const EXCUSE_ME = "/music/excuse_me.mp3";
@@ -11,7 +11,7 @@ const SCARED_GEOMETRY = "/music/scared_geometry.mp3";
 const SIENTE = "/music/siente.mp3";
 
 const Y2K_COVER = "/images/y2k.webp";
-const ROCK_BODY_COVER = "/images/rock_body.webp";
+const SHALLOW_COVER = "/images/keith_carnal.webp";
 const AMORE_COVER = "/images/amore_tossico.webp";
 const GEM_LINGO_COVER = "/images/gem_lingo.webp";
 const EXCUSE_ME_COVER = "/images/excuse_moi.webp";
@@ -41,12 +41,12 @@ export const DATA_SONGS: Song[] = [
     song: Y2K,
   },
   {
-    id: "rock_body",
-    title: "Rock Body",
-    artist: "Stef de Haan",
-    album: "Single",
-    cover: ROCK_BODY_COVER,
-    song: ROCK_BODY,
+    id: "shallow",
+    title: "Shallow",
+    artist: "Keith Carnal",
+    album: "Aluminium",
+    cover: SHALLOW_COVER,
+    song: SHALLOW,
   },
   {
     id: "amore",
