@@ -56,6 +56,14 @@ void main (){
     uv = scale(2.0 - vec2(sin(displacementVal) + 1.0)) * uv;
     uv += vec2(0.5);
 
-    gl_FragColor = texture2D(uTexture, uv + vec2(distortion, 0.0));
+    vec4 tex = texture2D(uTexture, uv + vec2(distortion, 0.0));
+    
+    float shade = vNoise * 0.5 + 0.5;
+    vec3 noiseColor = vec3(shade);
+    float ao = mix(0.6, 1.2, shade);
+
+    vec3 color = mix(tex.rgb * ao, noiseColor, 0.2);
+
+    gl_FragColor = vec4(color, tex.a);
     
 }
