@@ -62,7 +62,7 @@ void main (){
     vec3 noiseColor = vec3(shade);
     float ao = mix(0.6, 1.2, shade);
 
-    vec3 color = mix(tex.rgb * ao, noiseColor, 0.1);
+    vec3 color = mix(tex.rgb * ao, noiseColor, 0.15);
 
     gl_FragColor = vec4(color, tex.a);
     
